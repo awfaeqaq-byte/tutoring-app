@@ -1,0 +1,680 @@
+// 主应用逻辑
+let currentWeekStart = null;
+let currentYear = null;
+let currentMonth = null;
+
+const daysOfWeek = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+const subjectColors = [
+    '#00d4ff', '#00ff88', '#bf00ff', '#ff6b35', '#ffd700',
+    '#00ffff', '#ff0080', '#7fff00', '#ff4500', '#9400d3'
+];
+
+// 初始化应用
+document.addEventListener('DOMContentLoaded', async () => {
+    await initDB();
+    loadWeekView();
+    initSubjectColorStyles();
+});
+
+// 视图切换
+function switchView(view) {
+    document.querySelectorAll('.app-main').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+    document.getElementById(`${view}-view`).classList.remove('hidden');
+    document.querySelector(`.nav-item[data-view="${view}"]`).classList.add('active');
+
+    if (view === 'week') loadWeekView();
+    else if (view === 'month') loadMonthView();
+    else if (view === 'stats') loadStatsView();
+}
+
+// ========== 周视图 ==========
+async function loadWeekView(date = null) {
+    const targetDate = date || new Date().toISOString().split('T')[0];
+    currentWeekStart = getWeekStart(targetDate);
+
+    const weekEnd = new Date(currentWeekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+
+    document.getElementById('week-range').textContent =
+        `${formatDateOnly(currentWeekStart)} - ${formatDateOnly(weekEnd.toISOString().split('T')[0])}`;
+    document.getElementById('week-title').textContent =
+        `${formatDateOnly(currentWeekStart)} - ${formatDateOnly(weekEnd.toISOString().split('T')[0])}`;
+
+    await renderWeekCalendar();
+    await loadWeekIncome();
+}
+
+function getWeekStart(dateStr) {
+    const date = new Date(dateStr);
+    const day = date.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    const monday = new Date(date);
+    monday.setDate(date.getDate() + diff);
+    return monday.toISOString().split('T')[0];
+}
+
+async function renderWeekCalendar() {
+    const weekStart = new Date(currentWeekStart);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
+    const sessions = await getSessionsByDateRange(
+        currentWeekStart,
+        weekEnd.toISOString().split('T')[0]
+    );
+
+    // 自动完成过期的课程
+    const now = new Date();
+    let updated = false;
+    for (const session of sessions) {
+        if (session.status === 'scheduled') {
+            const sessionEnd = new Date(`${session.session_date}T${session.end_time}`);
+            if (now > sessionEnd) {
+                session.status = 'completed';
+                await updateSession(session);
+                updated = true;
+            }
+        }
+    }
+
+    if (updated) {
+        const freshSessions = await getSessionsByDateRange(
+            currentWeekStart,
+            weekEnd.toISOString().split('T')[0]
+        );
+        renderWeekDays(freshSessions);
+    } else {
+        renderWeekDays(sessions);
+    }
+}
+
+function renderWeekDays(sessions) {
+    const weekStart = new Date(currentWeekStart);
+    let html = '';
+
+    for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(weekStart);
+        currentDate.setDate(weekStart.getDate() + i);
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const isToday = isSameDay(currentDate, new Date());
+
+        const daySessions = sessions.filter(s => s.session_date === dateStr);
+
+        html += `
+            <div class="day-column" data-date="${dateStr}">
+                <div class="day-header ${isToday ? 'today' : ''}">
+                    <div class="day-name">${daysOfWeek[i]}</div>
+                    <div class="day-date">${formatDateOnly(dateStr)}</div>
+                </div>
+                <div class="day-sessions">
+                    ${renderDaySessions(daySessions)}
+                </div>
+                <button class="add-session-btn" onclick="showAddDrawer('${dateStr}')">
+                    <i class="bi bi-plus"></i>
+                </button>
+            </div>
+        `;
+    }
+
+    document.getElementById('week-calendar').innerHTML = html;
+}
+
+function renderDaySessions(sessions) {
+    if (sessions.length === 0) {
+        return '<div class="text-center text-muted py-3"><div class="small">暂无安排</div></div>';
+    }
+
+    sessions.sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+    return sessions.map(session => {
+        const colorIndex = getSubjectColorIndex(session.subject);
+        const subjectClass = `subject-color-${colorIndex}`;
+        return `
+            <div class="session-card ${subjectClass} ${session.status}"
+                 onclick="showSessionDrawer(${session.id})"
+                 data-session-id="${session.id}">
+                <div class="session-time">${formatTime(session.start_time)}-${formatTime(session.end_time)}
+                    ${session.is_recurring ? '<i class="bi bi-arrow-repeat ms-1"></i>' : ''}
+                </div>
+                <div class="student-name">${session.student_name}</div>
+                <div class="session-info">${session.subject}</div>
+                <div class="amount">¥${parseFloat(session.amount).toFixed(0)}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function loadWeekIncome() {
+    const weekStart = new Date(currentWeekStart);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
+    const sessions = await getSessionsByDateRange(
+        currentWeekStart,
+        weekEnd.toISOString().split('T')[0]
+    );
+
+    const completed = sessions.filter(s => s.status === 'completed');
+    const totalIncome = completed.reduce((sum, s) => sum + parseFloat(s.amount || 0), 0);
+    const totalMinutes = completed.reduce((sum, s) => sum + (s.duration || 0), 0);
+    const totalHours = totalMinutes / 60;
+    const hourlyRate = totalHours > 0 ? (totalIncome / totalHours).toFixed(0) : 0;
+
+    document.getElementById('weekly-income').textContent = `¥${totalIncome.toFixed(0)}`;
+    document.getElementById('weekly-hourly').textContent = `时薪 ¥${hourlyRate}/h`;
+}
+
+function prevWeek() {
+    const prevDate = new Date(currentWeekStart);
+    prevDate.setDate(prevDate.getDate() - 7);
+    loadWeekView(prevDate.toISOString().split('T')[0]);
+}
+
+function nextWeek() {
+    const nextDate = new Date(currentWeekStart);
+    nextDate.setDate(nextDate.getDate() + 7);
+    loadWeekView(nextDate.toISOString().split('T')[0]);
+}
+
+// ========== 月视图 ==========
+async function loadMonthView(year = null, month = null) {
+    const now = new Date();
+    currentYear = year || now.getFullYear();
+    currentMonth = month || (now.getMonth() + 1);
+
+    document.getElementById('month-title').textContent = `${currentYear}年${currentMonth}月`;
+
+    await renderMonthCalendar();
+    await loadMonthIncome();
+}
+
+async function renderMonthCalendar() {
+    const firstDay = new Date(currentYear, currentMonth - 1, 1);
+    const lastDay = new Date(currentYear, currentMonth, 0);
+    const daysInMonth = lastDay.getDate();
+    const firstDayOfWeek = firstDay.getDay() || 7;
+
+    const monthStart = firstDay.toISOString().split('T')[0];
+    const monthEnd = lastDay.toISOString().split('T')[0];
+    const sessions = await getSessionsByDateRange(monthStart, monthEnd);
+
+    let html = '<div class="calendar-row">';
+
+    for (let i = 1; i < firstDayOfWeek; i++) {
+        html += '<div class="calendar-cell empty"></div>';
+    }
+
+    const today = new Date();
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+        const isToday = today.getFullYear() === currentYear &&
+                        today.getMonth() + 1 === currentMonth &&
+                        today.getDate() === day;
+        const daySessions = sessions.filter(s => s.session_date === dateStr);
+        const dayIncome = daySessions.reduce((sum, s) => sum + parseFloat(s.amount || 0), 0);
+
+        const intensity = Math.min(dayIncome / 500, 1);
+        const bgColor = dayIncome > 0 ? `rgba(0, 255, 136, ${0.2 + intensity * 0.6})` : 'transparent';
+
+        html += `
+            <div class="calendar-cell ${isToday ? 'today' : ''}"
+                 style="background: ${bgColor};"
+                 onclick="showDayInWeek('${dateStr}')">
+                <span class="day-num ${daySessions.length > 0 ? 'neon-text' : ''}">${day}</span>
+                ${daySessions.length > 0 ? `<span class="day-dots">${'●'.repeat(Math.min(daySessions.length, 3))}</span>` : ''}
+            </div>
+        `;
+
+        if ((firstDayOfWeek - 1 + day) % 7 === 0 && day < daysInMonth) {
+            html += '</div><div class="calendar-row">';
+        }
+    }
+
+    html += '</div>';
+    document.getElementById('calendar-grid').innerHTML = html;
+}
+
+async function loadMonthIncome() {
+    const firstDay = new Date(currentYear, currentMonth - 1, 1);
+    const lastDay = new Date(currentYear, currentMonth, 0);
+
+    const monthStart = firstDay.toISOString().split('T')[0];
+    const monthEnd = lastDay.toISOString().split('T')[0];
+    const sessions = await getSessionsByDateRange(monthStart, monthEnd);
+
+    const completed = sessions.filter(s => s.status === 'completed');
+    const totalIncome = completed.reduce((sum, s) => sum + parseFloat(s.amount || 0), 0);
+
+    document.getElementById('month-income').textContent = `¥${totalIncome.toFixed(0)}`;
+    document.getElementById('month-sessions').textContent = `${completed.length}节`;
+}
+
+function prevMonth() {
+    if (currentMonth === 1) {
+        currentYear--;
+        currentMonth = 12;
+    } else {
+        currentMonth--;
+    }
+    loadMonthView(currentYear, currentMonth);
+}
+
+function nextMonth() {
+    if (currentMonth === 12) {
+        currentYear++;
+        currentMonth = 1;
+    } else {
+        currentMonth++;
+    }
+    loadMonthView(currentYear, currentMonth);
+}
+
+function showDayInWeek(dateStr) {
+    switchView('week');
+    loadWeekView(dateStr);
+}
+
+// ========== 统计视图 ==========
+async function loadStatsView() {
+    await loadStatsIncome();
+    await loadIncomeTrendChart();
+    await loadSubjectPieChart();
+}
+
+async function loadStatsIncome() {
+    const today = new Date();
+
+    // 本周
+    const weekStart = new Date(today);
+    const day = today.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    weekStart.setDate(today.getDate() + diff);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
+    const weekSessions = await getSessionsByDateRange(
+        weekStart.toISOString().split('T')[0],
+        weekEnd.toISOString().split('T')[0]
+    );
+    const weekCompleted = weekSessions.filter(s => s.status === 'completed');
+    const weekIncome = weekCompleted.reduce((sum, s) => sum + parseFloat(s.amount || 0), 0);
+    const weekHours = weekCompleted.reduce((sum, s) => sum + (s.duration || 0), 0) / 60;
+    const weekHourly = weekHours > 0 ? (weekIncome / weekHours).toFixed(0) : 0;
+
+    // 本月
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    const monthSessions = await getSessionsByDateRange(
+        monthStart.toISOString().split('T')[0],
+        monthEnd.toISOString().split('T')[0]
+    );
+    const monthCompleted = monthSessions.filter(s => s.status === 'completed');
+    const monthIncome = monthCompleted.reduce((sum, s) => sum + parseFloat(s.amount || 0), 0);
+    const monthHours = monthCompleted.reduce((sum, s) => sum + (s.duration || 0), 0) / 60;
+    const monthHourly = monthHours > 0 ? (monthIncome / monthHours).toFixed(0) : 0;
+
+    document.getElementById('stats-weekly-income').textContent = `¥${weekIncome.toFixed(0)}`;
+    document.getElementById('stats-weekly-hourly').textContent = `时薪 ¥${weekHourly}/h`;
+    document.getElementById('stats-monthly-income').textContent = `¥${monthIncome.toFixed(0)}`;
+    document.getElementById('stats-monthly-hourly').textContent = `时薪 ¥${monthHourly}/h`;
+}
+
+async function loadIncomeTrendChart() {
+    const canvas = document.getElementById('income-trend-chart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const sessions = await getAllSessions();
+    const completed = sessions.filter(s => s.status === 'completed');
+
+    // 按周统计最近8周
+    const weeks = [];
+    const now = new Date();
+
+    for (let i = 7; i >= 0; i--) {
+        const weekStart = new Date(now);
+        const day = now.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        weekStart.setDate(now.getDate() + diff - (i * 7));
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+
+        const weekIncome = completed
+            .filter(s => {
+                const d = new Date(s.session_date);
+                return d >= weekStart && d <= weekEnd;
+            })
+            .reduce((sum, s) => sum + parseFloat(s.amount || 0), 0);
+
+        weeks.push({
+            label: `${weekStart.getMonth() + 1}/${weekStart.getDate()}`,
+            income: weekIncome
+        });
+    }
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: weeks.map(w => w.label),
+            datasets: [{
+                label: '收入',
+                data: weeks.map(w => w.income),
+                borderColor: '#00ff88',
+                backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#a0a0a0' } },
+                y: { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#a0a0a0' } }
+            }
+        }
+    });
+}
+
+async function loadSubjectPieChart() {
+    const canvas = document.getElementById('subject-pie-chart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const sessions = await getAllSessions();
+    const completed = sessions.filter(s => s.status === 'completed');
+
+    if (completed.length === 0) {
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['暂无数据'],
+                datasets: [{ data: [1], backgroundColor: ['rgba(100, 100, 100, 0.3)'], borderWidth: 0 }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { color: '#a0a0a0' } } }
+            }
+        });
+        return;
+    }
+
+    const subjectStats = {};
+    completed.forEach(s => {
+        if (!subjectStats[s.subject]) {
+            subjectStats[s.subject] = { subject: s.subject, total: 0, count: 0 };
+        }
+        subjectStats[s.subject].total += parseFloat(s.amount || 0);
+        subjectStats[s.subject].count++;
+    });
+
+    const data = Object.values(subjectStats).sort((a, b) => b.total - a.total);
+    const labels = data.map(d => d.subject);
+    const values = data.map(d => d.total);
+    const colors = data.map((_, i) => subjectColors[i % subjectColors.length]);
+
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { color: '#e0e0e0', padding: 15, usePointStyle: true } },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const item = data[context.dataIndex];
+                            return `¥${item.total.toFixed(0)} (${item.count}节课)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ========== 抽屉操作 ==========
+function showAddDrawer(date = null) {
+    const form = document.getElementById('session-form');
+    form.reset();
+    document.getElementById('edit-session-id').value = '';
+
+    const dateInput = form.querySelector('[name="session_date"]');
+    dateInput.value = date || new Date().toISOString().split('T')[0];
+
+    document.getElementById('add-overlay').classList.add('show');
+    document.getElementById('add-drawer').classList.add('open');
+}
+
+function closeAddDrawer() {
+    document.getElementById('add-overlay').classList.remove('show');
+    document.getElementById('add-drawer').classList.remove('open');
+    document.getElementById('recurrence-options').classList.add('hidden');
+}
+
+async function showSessionDrawer(sessionId) {
+    const session = await getSession(sessionId);
+    if (!session) return;
+
+    const isCompleted = session.status === 'completed';
+    const statusBadge = isCompleted
+        ? '<span class="status-badge completed">已完成</span>'
+        : '<span class="status-badge scheduled">进行中</span>';
+
+    const actionButton = isCompleted
+        ? `<button class="btn-neon btn-outline" onclick="markScheduled(${session.id})">标记未完成</button>`
+        : `<button class="btn-neon" onclick="markCompleted(${session.id})">标记完成</button>`;
+
+    document.getElementById('drawer-body').innerHTML = `
+        <div class="session-detail">
+            <div class="detail-row">
+                <span class="detail-label">状态</span>
+                <span class="detail-value">${statusBadge}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">学生</span>
+                <span class="detail-value">${session.student_name}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">科目</span>
+                <span class="detail-value">${session.subject}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">时间</span>
+                <span class="detail-value">${session.session_date} ${formatTime(session.start_time)}-${formatTime(session.end_time)}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">地址</span>
+                <span class="detail-value">${session.address}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">金额</span>
+                <span class="detail-value" style="color: var(--neon-gold); font-weight: 700;">¥${parseFloat(session.amount).toFixed(2)}</span>
+            </div>
+            ${session.notes ? `<div class="detail-row"><span class="detail-label">备注</span><span class="detail-value">${session.notes}</span></div>` : ''}
+        </div>
+        <div class="drawer-actions">
+            <button class="btn-neon btn-outline" onclick="editSession(${session.id})">编辑</button>
+            ${actionButton}
+            <button class="btn-neon btn-danger" onclick="deleteSession(${session.id})">删除</button>
+        </div>
+    `;
+
+    document.getElementById('drawer-overlay').classList.add('show');
+    document.getElementById('session-drawer').classList.add('open');
+}
+
+function closeDrawer() {
+    document.getElementById('drawer-overlay').classList.remove('show');
+    document.getElementById('session-drawer').classList.remove('open');
+}
+
+// ========== 课程操作 ==========
+async function saveSession() {
+    const form = document.getElementById('session-form');
+    const formData = new FormData(form);
+
+    const startTime = formData.get('start_time');
+    const endTime = formData.get('end_time');
+    const startMinutes = timeToMinutes(startTime);
+    const endMinutes = timeToMinutes(endTime);
+    const duration = endMinutes - startMinutes;
+
+    if (duration <= 0) {
+        alert('结束时间必须晚于开始时间');
+        return;
+    }
+
+    const sessionData = {
+        student_name: formData.get('student_name'),
+        subject: formData.get('subject'),
+        session_date: formData.get('session_date'),
+        start_time: startTime,
+        end_time: endTime,
+        duration: duration,
+        address: formData.get('address'),
+        amount: parseFloat(formData.get('amount')),
+        is_recurring: formData.get('is_recurring') === 'on',
+        notes: formData.get('notes') || '',
+        status: 'scheduled',
+        created_at: new Date().toISOString()
+    };
+
+    const editId = document.getElementById('edit-session-id').value;
+
+    try {
+        if (editId) {
+            sessionData.id = parseInt(editId);
+            await updateSession(sessionData);
+        } else {
+            const isRecurring = formData.get('is_recurring') === 'on';
+            const recurrenceEndDate = formData.get('recurrence_end_date');
+
+            if (isRecurring && recurrenceEndDate) {
+                let currentDate = new Date(sessionData.session_date);
+                const endDate = new Date(recurrenceEndDate);
+                let weekCount = 0;
+
+                while (currentDate <= endDate && weekCount < 52) {
+                    const newSession = { ...sessionData, session_date: currentDate.toISOString().split('T')[0] };
+                    await addSession(newSession);
+                    currentDate.setDate(currentDate.getDate() + 7);
+                    weekCount++;
+                }
+            } else {
+                await addSession(sessionData);
+            }
+        }
+
+        closeAddDrawer();
+        loadWeekView();
+    } catch (error) {
+        console.error('保存失败:', error);
+        alert('保存失败，请重试');
+    }
+}
+
+async function editSession(sessionId) {
+    const session = await getSession(sessionId);
+    if (!session) return;
+
+    closeDrawer();
+
+    const form = document.getElementById('session-form');
+    form.reset();
+
+    document.getElementById('edit-session-id').value = session.id;
+    form.querySelector('[name="student_name"]').value = session.student_name;
+    form.querySelector('[name="subject"]').value = session.subject;
+    form.querySelector('[name="session_date"]').value = session.session_date;
+    form.querySelector('[name="start_time"]').value = session.start_time;
+    form.querySelector('[name="end_time"]').value = session.end_time;
+    form.querySelector('[name="address"]').value = session.address;
+    form.querySelector('[name="amount"]').value = session.amount;
+    form.querySelector('[name="notes"]').value = session.notes || '';
+
+    document.getElementById('add-overlay').classList.add('show');
+    document.getElementById('add-drawer').classList.add('open');
+}
+
+async function deleteSession(sessionId) {
+    if (!confirm('确定要删除这个课程吗？')) return;
+
+    try {
+        await deleteSessionDB(sessionId);
+        closeDrawer();
+        loadWeekView();
+    } catch (error) {
+        console.error('删除失败:', error);
+        alert('删除失败，请重试');
+    }
+}
+
+async function markCompleted(sessionId) {
+    const session = await getSession(sessionId);
+    if (!session) return;
+
+    session.status = 'completed';
+    await updateSession(session);
+    closeDrawer();
+    loadWeekView();
+}
+
+async function markScheduled(sessionId) {
+    const session = await getSession(sessionId);
+    if (!session) return;
+
+    session.status = 'scheduled';
+    await updateSession(session);
+    closeDrawer();
+    loadWeekView();
+}
+
+// ========== 工具函数 ==========
+function formatDateOnly(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+}
+
+function formatTime(timeStr) {
+    return timeStr ? timeStr.substring(0, 5) : '';
+}
+
+function timeToMinutes(timeStr) {
+    if (!timeStr) return 0;
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+}
+
+function isSameDay(date1, date2) {
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getDate() === date2.getDate();
+}
+
+function getSubjectColorIndex(subject) {
+    if (!subject) return 0;
+    const hash = subject.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return hash % subjectColors.length;
+}
+
+function initSubjectColorStyles() {
+    const style = document.createElement('style');
+    style.id = 'dynamic-subject-colors';
+    let css = '';
+    subjectColors.forEach((color, index) => {
+        css += `.session-card.subject-color-${index} { border-left-color: ${color}; }\n`;
+    });
+    style.textContent = css;
+    document.head.appendChild(style);
+}

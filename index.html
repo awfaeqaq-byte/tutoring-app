@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>家教安排助手</title>
+    <meta name="description" content="个人家教安排管理工具">
+    <meta name="theme-color" content="#00d4ff">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="家教助手">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 顶部状态栏 -->
+    <header class="app-header">
+        <div class="header-content">
+            <div class="header-left">
+                <i class="bi bi-calendar-check neon-text"></i>
+                <span class="app-title">家教助手</span>
+            </div>
+            <div class="header-center">
+                <span id="week-range" class="neon-text"></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区域 - 周视图 -->
+    <main class="app-main" id="week-view">
+        <div class="week-nav">
+            <button class="week-nav-btn" onclick="prevWeek()">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <span id="week-title" class="neon-text"></span>
+            <button class="week-nav-btn" onclick="nextWeek()">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+
+        <div class="weekly-income-bar">
+            <span class="income-label">本周收入</span>
+            <span class="income-value" id="weekly-income">¥0</span>
+            <span class="income-hourly" id="weekly-hourly">时薪 ¥0/h</span>
+        </div>
+
+        <div class="week-calendar" id="week-calendar"></div>
+    </main>
+
+    <!-- 月视图 -->
+    <main class="app-main hidden" id="month-view">
+        <div class="month-nav">
+            <button class="week-nav-btn" onclick="prevMonth()">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <span id="month-title" class="neon-text"></span>
+            <button class="week-nav-btn" onclick="nextMonth()">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+
+        <div class="income-card">
+            <div class="row">
+                <div class="col-6">
+                    <div class="label">本月收入</div>
+                    <div class="value" id="month-income">¥0</div>
+                </div>
+                <div class="col-6">
+                    <div class="label">课程数</div>
+                    <div class="value" id="month-sessions" style="color: var(--neon-cyan);">0节</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="calendar-heatmap">
+            <div class="calendar-weekdays">
+                <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+            </div>
+            <div class="calendar-grid" id="calendar-grid"></div>
+        </div>
+    </main>
+
+    <!-- 统计视图 -->
+    <main class="app-main hidden" id="stats-view">
+        <div class="income-stats">
+            <div class="income-stat-card">
+                <div class="stat-label">本周收入</div>
+                <div class="stat-value" id="stats-weekly-income">¥0</div>
+                <div class="stat-sub" id="stats-weekly-hourly">时薪 ¥0/h</div>
+            </div>
+            <div class="income-stat-card">
+                <div class="stat-label">本月收入</div>
+                <div class="stat-value" id="stats-monthly-income">¥0</div>
+                <div class="stat-sub" id="stats-monthly-hourly">时薪 ¥0/h</div>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <h6 class="chart-title neon-text">收入趋势</h6>
+            <div class="chart-container">
+                <canvas id="income-trend-chart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <h6 class="chart-title neon-text">科目分布</h6>
+            <div class="chart-container">
+                <canvas id="subject-pie-chart"></canvas>
+            </div>
+        </div>
+    </main>
+
+    <!-- 底部导航栏 -->
+    <nav class="app-nav">
+        <div class="nav-item active" data-view="week" onclick="switchView('week')">
+            <a href="javascript:void(0)">
+                <i class="bi bi-calendar-week"></i>
+                <span>周视图</span>
+            </a>
+        </div>
+        <div class="nav-item" data-view="month" onclick="switchView('month')">
+            <a href="javascript:void(0)">
+                <i class="bi bi-calendar-month"></i>
+                <span>月视图</span>
+            </a>
+        </div>
+        <div class="nav-item" data-view="stats" onclick="switchView('stats')">
+            <a href="javascript:void(0)">
+                <i class="bi bi-bar-chart"></i>
+                <span>统计</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- 课程详情抽屉 -->
+    <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+    <div class="bottom-drawer" id="session-drawer">
+        <div class="drawer-header">
+            <h5 class="drawer-title">课程详情</h5>
+            <button class="drawer-close" onclick="closeDrawer()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="drawer-body" id="drawer-body"></div>
+    </div>
+
+    <!-- 添加课程抽屉 -->
+    <div class="drawer-overlay" id="add-overlay" onclick="closeAddDrawer()"></div>
+    <div class="bottom-drawer" id="add-drawer">
+        <div class="drawer-header">
+            <h5 class="drawer-title">添加课程</h5>
+            <button class="drawer-close" onclick="closeAddDrawer()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="drawer-body">
+            <form id="session-form">
+                <input type="hidden" name="id" id="edit-session-id">
+                <div class="mb-3">
+                    <label class="form-label">学生姓名</label>
+                    <input type="text" class="form-control" name="student_name" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">科目</label>
+                    <input type="text" class="form-control" name="subject" placeholder="如：数学、物理、化学..." required>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="form-label">日期</label>
+                        <input type="date" class="form-control" name="session_date" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">开始时间</label>
+                        <input type="time" class="form-control" name="start_time" required>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="form-label">结束时间</label>
+                        <input type="time" class="form-control" name="end_time" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">金额 (元)</label>
+                        <input type="number" class="form-control" name="amount" step="0.01" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">上课地址</label>
+                    <input type="text" class="form-control" name="address" required>
+                </div>
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" name="is_recurring" id="is-recurring">
+                    <label class="form-check-label" for="is-recurring">每周重复</label>
+                </div>
+                <div class="mb-3 hidden" id="recurrence-options">
+                    <label class="form-label">重复结束日期</label>
+                    <input type="date" class="form-control" name="recurrence_end_date">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">备注</label>
+                    <textarea class="form-control" name="notes" rows="2"></textarea>
+                </div>
+                <button type="button" class="btn-neon w-100" onclick="saveSession()">保存</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // 注册Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(() => console.log('Service Worker 注册成功'))
+                .catch(err => console.log('Service Worker 注册失败:', err));
+        }
+
+        // 监听重复复选框
+        document.getElementById('is-recurring').addEventListener('change', function() {
+            document.getElementById('recurrence-options').classList.toggle('hidden', !this.checked);
+        });
+    </script>
+</body>
+</html>
