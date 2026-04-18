@@ -1,14 +1,12 @@
 // Service Worker for PWA
-const CACHE_NAME = 'tutoring-pwa-v1';
+const CACHE_NAME = 'tutoring-pwa-v2';
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/css/style.css',
-    '/js/db.js',
-    '/js/app.js',
-    '/manifest.json',
-    '/icons/icon-192.png',
-    '/icons/icon-512.png',
+    './',
+    './index.html',
+    './css/style.css',
+    './js/db.js',
+    './js/app.js',
+    './manifest.json',
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
     'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css',
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
@@ -61,7 +59,7 @@ self.addEventListener('fetch', event => {
             })
             .catch(() => {
                 if (event.request.mode === 'navigate') {
-                    return caches.match('/index.html');
+                    return caches.match('./index.html');
                 }
             })
     );

@@ -2,12 +2,12 @@
   "name": "家教安排助手",
   "short_name": "家教助手",
   "description": "个人家教安排管理工具，离线可用",
-  "start_url": "/",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0a1628",
   "theme_color": "#00d4ff",
   "orientation": "portrait",
-  "scope": "/",
+  "scope": "./",
   "icons": [
     {
       "src": "icons/icon-192.png",
