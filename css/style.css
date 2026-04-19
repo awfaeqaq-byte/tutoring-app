@@ -129,6 +129,25 @@ body::after {
     padding-top: calc(var(--header-height) + 16px + env(safe-area-inset-top, 0px));
     padding-bottom: calc(var(--nav-height) + 32px + env(safe-area-inset-bottom, 0px));
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.view-header {
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    background: linear-gradient(180deg, rgba(10, 22, 40, 1) 0%, rgba(10, 22, 40, 0.95) 80%, transparent 100%);
+    padding: 8px 0 16px 0;
+    z-index: 10;
+    margin: -16px -16px 0 -16px;
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+.view-content {
+    flex: 1;
+    overflow-y: auto;
     animation: fadeIn 0.3s ease;
 }
 
@@ -901,7 +920,16 @@ body::after {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 0;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    background: linear-gradient(180deg, rgba(10, 22, 40, 1) 0%, rgba(10, 22, 40, 0.95) 80%, transparent 100%);
+    padding: 8px 0 16px 0;
+    z-index: 10;
+    margin: -16px -16px 0 -16px;
+    padding-left: 16px;
+    padding-right: 16px;
 }
 
 .students-header h5 {
@@ -917,6 +945,7 @@ body::after {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding-top: 16px;
 }
 
 .student-card {

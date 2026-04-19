@@ -33,55 +33,59 @@
 
     <!-- 主内容区域 - 周视图 -->
     <main class="app-main" id="week-view">
-        <div class="week-nav">
-            <button class="week-nav-btn" onclick="prevWeek()">
-                <i class="bi bi-chevron-left"></i>
-            </button>
-            <span id="week-title" class="neon-text"></span>
-            <button class="week-nav-btn" onclick="nextWeek()">
-                <i class="bi bi-chevron-right"></i>
-            </button>
+        <div class="view-header">
+            <div class="week-nav">
+                <button class="week-nav-btn" onclick="prevWeek()">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <span id="week-title" class="neon-text"></span>
+                <button class="week-nav-btn" onclick="nextWeek()">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
         </div>
-
-        <div class="weekly-income-bar">
-            <span class="income-label">本周收入</span>
-            <span class="income-value" id="weekly-income">¥0</span>
-            <span class="income-hourly" id="weekly-hourly">时薪 ¥0/h</span>
+        <div class="view-content">
+            <div class="weekly-income-bar">
+                <span class="income-label">本周收入</span>
+                <span class="income-value" id="weekly-income">¥0</span>
+                <span class="income-hourly" id="weekly-hourly">时薪 ¥0/h</span>
+            </div>
+            <div class="week-calendar" id="week-calendar"></div>
         </div>
-
-        <div class="week-calendar" id="week-calendar"></div>
     </main>
 
     <!-- 月视图 -->
     <main class="app-main hidden" id="month-view">
-        <div class="month-nav">
-            <button class="week-nav-btn" onclick="prevMonth()">
-                <i class="bi bi-chevron-left"></i>
-            </button>
-            <span id="month-title" class="neon-text"></span>
-            <button class="week-nav-btn" onclick="nextMonth()">
-                <i class="bi bi-chevron-right"></i>
-            </button>
-        </div>
-
-        <div class="income-card">
-            <div class="row">
-                <div class="col-6">
-                    <div class="label">本月收入</div>
-                    <div class="value" id="month-income">¥0</div>
-                </div>
-                <div class="col-6">
-                    <div class="label">课程数</div>
-                    <div class="value" id="month-sessions" style="color: var(--neon-cyan);">0节</div>
-                </div>
+        <div class="view-header">
+            <div class="month-nav">
+                <button class="week-nav-btn" onclick="prevMonth()">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <span id="month-title" class="neon-text"></span>
+                <button class="week-nav-btn" onclick="nextMonth()">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
             </div>
         </div>
-
-        <div class="calendar-heatmap">
-            <div class="calendar-weekdays">
-                <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+        <div class="view-content">
+            <div class="income-card">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="label">本月收入</div>
+                        <div class="value" id="month-income">¥0</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="label">课程数</div>
+                        <div class="value" id="month-sessions" style="color: var(--neon-cyan);">0节</div>
+                    </div>
+                </div>
             </div>
-            <div class="calendar-grid" id="calendar-grid"></div>
+            <div class="calendar-heatmap">
+                <div class="calendar-weekdays">
+                    <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+                </div>
+                <div class="calendar-grid" id="calendar-grid"></div>
+            </div>
         </div>
     </main>
 
@@ -93,35 +97,39 @@
                 <i class="bi bi-plus"></i> 添加学生
             </button>
         </div>
-        <div class="students-list" id="students-list"></div>
+        <div class="view-content">
+            <div class="students-list" id="students-list"></div>
+        </div>
     </main>
 
     <!-- 统计视图 -->
     <main class="app-main hidden" id="stats-view">
-        <div class="income-stats">
-            <div class="income-stat-card">
-                <div class="stat-label">本周收入</div>
-                <div class="stat-value" id="stats-weekly-income">¥0</div>
-                <div class="stat-sub" id="stats-weekly-hourly">时薪 ¥0/h</div>
+        <div class="view-content">
+            <div class="income-stats">
+                <div class="income-stat-card">
+                    <div class="stat-label">本周收入</div>
+                    <div class="stat-value" id="stats-weekly-income">¥0</div>
+                    <div class="stat-sub" id="stats-weekly-hourly">时薪 ¥0/h</div>
+                </div>
+                <div class="income-stat-card">
+                    <div class="stat-label">本月收入</div>
+                    <div class="stat-value" id="stats-monthly-income">¥0</div>
+                    <div class="stat-sub" id="stats-monthly-hourly">时薪 ¥0/h</div>
+                </div>
             </div>
-            <div class="income-stat-card">
-                <div class="stat-label">本月收入</div>
-                <div class="stat-value" id="stats-monthly-income">¥0</div>
-                <div class="stat-sub" id="stats-monthly-hourly">时薪 ¥0/h</div>
-            </div>
-        </div>
 
-        <div class="chart-card">
-            <h6 class="chart-title neon-text">收入趋势</h6>
-            <div class="chart-container">
-                <canvas id="income-trend-chart"></canvas>
+            <div class="chart-card">
+                <h6 class="chart-title neon-text">收入趋势</h6>
+                <div class="chart-container">
+                    <canvas id="income-trend-chart"></canvas>
+                </div>
             </div>
-        </div>
 
-        <div class="chart-card">
-            <h6 class="chart-title neon-text">科目分布</h6>
-            <div class="chart-container">
-                <canvas id="subject-pie-chart"></canvas>
+            <div class="chart-card">
+                <h6 class="chart-title neon-text">科目分布</h6>
+                <div class="chart-container">
+                    <canvas id="subject-pie-chart"></canvas>
+                </div>
             </div>
         </div>
     </main>
