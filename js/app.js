@@ -26,6 +26,7 @@ function switchView(view) {
 
     if (view === 'week') loadWeekView();
     else if (view === 'month') loadMonthView();
+    else if (view === 'students') loadStudentsView();
     else if (view === 'stats') loadStatsView();
 }
 
@@ -276,6 +277,42 @@ function showDayInWeek(dateStr) {
     loadWeekView(dateStr);
 }
 
+// ========== 学生档案视图 ==========
+async function loadStudentsView() {
+    const students = await getAllStudents();
+    renderStudentsList(students);
+}
+
+function renderStudentsList(students) {
+    const container = document.getElementById('students-list');
+
+    if (students.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-people" style="font-size: 3rem; opacity: 0.3;"></i>
+                <p class="mt-3">暂无学生档案</p>
+                <p class="small">添加学生后可快速创建课程</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = students.map(student => `
+        <div class="student-card" onclick="showStudentDrawer(${student.id})">
+            <div class="student-info">
+                <div class="student-name">${student.name}</div>
+                <div class="student-detail">${student.subject || '未设置科目'}</div>
+                ${student.default_address ? `<div class="student-detail"><i class="bi bi-geo-alt"></i> ${student.default_address}</div>` : ''}
+            </div>
+            <div class="student-actions">
+                <button class="btn-icon" onclick="event.stopPropagation(); quickAddSession(${student.id})" title="快速添加课程">
+                    <i class="bi bi-plus-circle"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
 // ========== 统计视图 ==========
 async function loadStatsView() {
     await loadStatsIncome();
@@ -444,7 +481,7 @@ async function loadSubjectPieChart() {
 }
 
 // ========== 抽屉操作 ==========
-function showAddDrawer(date = null) {
+async function showAddDrawer(date = null) {
     const form = document.getElementById('session-form');
     form.reset();
     document.getElementById('edit-session-id').value = '';
@@ -452,8 +489,35 @@ function showAddDrawer(date = null) {
     const dateInput = form.querySelector('[name="session_date"]');
     dateInput.value = date || new Date().toISOString().split('T')[0];
 
+    // 加载学生列表到下拉框
+    await loadStudentSelect();
+
     document.getElementById('add-overlay').classList.add('show');
     document.getElementById('add-drawer').classList.add('open');
+}
+
+async function loadStudentSelect() {
+    const students = await getAllStudents();
+    const select = document.getElementById('student-select');
+    select.innerHTML = '<option value="">-- 手动输入 --</option>' +
+        students.map(s => `<option value="${s.id}">${s.name}${s.subject ? ` (${s.subject})` : ''}</option>`).join('');
+}
+
+async function fillFromStudent() {
+    const select = document.getElementById('student-select');
+    const studentId = select.value;
+    if (!studentId) return;
+
+    const student = await getStudent(parseInt(studentId));
+    if (!student) return;
+
+    const form = document.getElementById('session-form');
+    form.querySelector('[name="student_name"]').value = student.name;
+    if (student.subject) form.querySelector('[name="subject"]').value = student.subject;
+    if (student.default_start_time) form.querySelector('[name="start_time"]').value = student.default_start_time;
+    if (student.default_end_time) form.querySelector('[name="end_time"]').value = student.default_end_time;
+    if (student.default_amount) form.querySelector('[name="amount"]').value = student.default_amount;
+    if (student.default_address) form.querySelector('[name="address"]').value = student.default_address;
 }
 
 function closeAddDrawer() {
@@ -474,6 +538,11 @@ async function showSessionDrawer(sessionId) {
     const actionButton = isCompleted
         ? `<button class="btn-neon btn-outline" onclick="markScheduled(${session.id})">标记未完成</button>`
         : `<button class="btn-neon" onclick="markCompleted(${session.id})">标记完成</button>`;
+
+    // 批量删除按钮（如果是循环课程）
+    const deleteButton = session.is_recurring && session.series_id
+        ? `<button class="btn-neon btn-danger" onclick="deleteSeries(${session.id}, '${session.series_id}')">删除全部循环</button>`
+        : `<button class="btn-neon btn-danger" onclick="deleteSession(${session.id})">删除</button>`;
 
     document.getElementById('drawer-body').innerHTML = `
         <div class="session-detail">
@@ -502,11 +571,14 @@ async function showSessionDrawer(sessionId) {
                 <span class="detail-value" style="color: var(--neon-gold); font-weight: 700;">¥${parseFloat(session.amount).toFixed(2)}</span>
             </div>
             ${session.notes ? `<div class="detail-row"><span class="detail-label">备注</span><span class="detail-value">${session.notes}</span></div>` : ''}
+            ${session.is_recurring ? `<div class="detail-row"><span class="detail-label">类型</span><span class="detail-value"><i class="bi bi-arrow-repeat"></i> 每周重复</span></div>` : ''}
         </div>
         <div class="drawer-actions">
             <button class="btn-neon btn-outline" onclick="editSession(${session.id})">编辑</button>
             ${actionButton}
-            <button class="btn-neon btn-danger" onclick="deleteSession(${session.id})">删除</button>
+        </div>
+        <div class="drawer-actions" style="margin-top: 8px;">
+            ${deleteButton}
         </div>
     `;
 
@@ -517,6 +589,105 @@ async function showSessionDrawer(sessionId) {
 function closeDrawer() {
     document.getElementById('drawer-overlay').classList.remove('show');
     document.getElementById('session-drawer').classList.remove('open');
+}
+
+// ========== 学生抽屉操作 ==========
+function showAddStudentDrawer() {
+    const form = document.getElementById('student-form');
+    form.reset();
+    document.getElementById('edit-student-id').value = '';
+
+    document.getElementById('student-overlay').classList.add('show');
+    document.getElementById('student-drawer').classList.add('open');
+}
+
+async function showStudentDrawer(studentId) {
+    const student = await getStudent(studentId);
+    if (!student) return;
+
+    const form = document.getElementById('student-form');
+    form.reset();
+    document.getElementById('edit-student-id').value = student.id;
+
+    form.querySelector('[name="name"]').value = student.name;
+    if (student.subject) form.querySelector('[name="subject"]').value = student.subject;
+    if (student.default_start_time) form.querySelector('[name="default_start_time"]').value = student.default_start_time;
+    if (student.default_end_time) form.querySelector('[name="default_end_time"]').value = student.default_end_time;
+    if (student.default_amount) form.querySelector('[name="default_amount"]').value = student.default_amount;
+    if (student.default_address) form.querySelector('[name="default_address"]').value = student.default_address;
+    if (student.phone) form.querySelector('[name="phone"]').value = student.phone;
+    if (student.notes) form.querySelector('[name="notes"]').value = student.notes;
+
+    document.getElementById('student-overlay').classList.add('show');
+    document.getElementById('student-drawer').classList.add('open');
+}
+
+function closeStudentDrawer() {
+    document.getElementById('student-overlay').classList.remove('show');
+    document.getElementById('student-drawer').classList.remove('open');
+}
+
+async function saveStudent() {
+    const form = document.getElementById('student-form');
+    const formData = new FormData(form);
+
+    const studentData = {
+        name: formData.get('name'),
+        subject: formData.get('subject') || '',
+        default_start_time: formData.get('default_start_time') || '',
+        default_end_time: formData.get('default_end_time') || '',
+        default_amount: formData.get('default_amount') ? parseFloat(formData.get('default_amount')) : null,
+        default_address: formData.get('default_address') || '',
+        phone: formData.get('phone') || '',
+        notes: formData.get('notes') || '',
+        created_at: new Date().toISOString()
+    };
+
+    const editId = document.getElementById('edit-student-id').value;
+
+    try {
+        if (editId) {
+            studentData.id = parseInt(editId);
+            await updateStudent(studentData);
+        } else {
+            await addStudent(studentData);
+        }
+
+        closeStudentDrawer();
+        loadStudentsView();
+    } catch (error) {
+        console.error('保存失败:', error);
+        alert('保存失败，请重试');
+    }
+}
+
+async function deleteStudent(studentId) {
+    if (!confirm('确定要删除这个学生档案吗？')) return;
+
+    try {
+        await deleteStudentDB(studentId);
+        closeStudentDrawer();
+        loadStudentsView();
+    } catch (error) {
+        console.error('删除失败:', error);
+        alert('删除失败，请重试');
+    }
+}
+
+// 快速从学生添加课程
+async function quickAddSession(studentId) {
+    const student = await getStudent(studentId);
+    if (!student) return;
+
+    await showAddDrawer();
+
+    const form = document.getElementById('session-form');
+    form.querySelector('[name="student_name"]').value = student.name;
+    if (student.subject) form.querySelector('[name="subject"]').value = student.subject;
+    if (student.default_start_time) form.querySelector('[name="start_time"]').value = student.default_start_time;
+    if (student.default_end_time) form.querySelector('[name="end_time"]').value = student.default_end_time;
+    if (student.default_amount) form.querySelector('[name="amount"]').value = student.default_amount;
+    if (student.default_address) form.querySelector('[name="address"]').value = student.default_address;
 }
 
 // ========== 课程操作 ==========
@@ -561,12 +732,18 @@ async function saveSession() {
             const recurrenceEndDate = formData.get('recurrence_end_date');
 
             if (isRecurring && recurrenceEndDate) {
+                // 生成系列ID
+                const seriesId = 'series_' + Date.now();
                 let currentDate = new Date(sessionData.session_date);
                 const endDate = new Date(recurrenceEndDate);
                 let weekCount = 0;
 
                 while (currentDate <= endDate && weekCount < 52) {
-                    const newSession = { ...sessionData, session_date: currentDate.toISOString().split('T')[0] };
+                    const newSession = {
+                        ...sessionData,
+                        session_date: currentDate.toISOString().split('T')[0],
+                        series_id: seriesId
+                    };
                     await addSession(newSession);
                     currentDate.setDate(currentDate.getDate() + 7);
                     weekCount++;
@@ -603,6 +780,8 @@ async function editSession(sessionId) {
     form.querySelector('[name="amount"]').value = session.amount;
     form.querySelector('[name="notes"]').value = session.notes || '';
 
+    await loadStudentSelect();
+
     document.getElementById('add-overlay').classList.add('show');
     document.getElementById('add-drawer').classList.add('open');
 }
@@ -614,6 +793,21 @@ async function deleteSession(sessionId) {
         await deleteSessionDB(sessionId);
         closeDrawer();
         loadWeekView();
+    } catch (error) {
+        console.error('删除失败:', error);
+        alert('删除失败，请重试');
+    }
+}
+
+// 批量删除循环课程
+async function deleteSeries(sessionId, seriesId) {
+    if (!confirm('确定要删除这个循环课程的所有课程吗？此操作不可恢复。')) return;
+
+    try {
+        const count = await deleteSeriesSessions(seriesId);
+        closeDrawer();
+        loadWeekView();
+        alert(`已删除 ${count} 节课程`);
     } catch (error) {
         console.error('删除失败:', error);
         alert('删除失败，请重试');

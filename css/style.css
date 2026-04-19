@@ -37,6 +37,8 @@ body {
     position: relative;
     overflow-x: hidden;
     overflow-y: auto;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
 body::before {
@@ -86,7 +88,8 @@ body::after {
     top: 0;
     left: 0;
     right: 0;
-    height: var(--header-height);
+    height: calc(var(--header-height) + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
     background: linear-gradient(180deg, rgba(10, 22, 40, 0.98) 0%, rgba(13, 33, 55, 0.95) 100%);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -123,8 +126,8 @@ body::after {
 /* 主内容区域 */
 .app-main {
     padding: 16px;
-    padding-top: calc(var(--header-height) + 16px);
-    padding-bottom: calc(var(--nav-height) + 32px);
+    padding-top: calc(var(--header-height) + 16px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(var(--nav-height) + 32px + env(safe-area-inset-bottom, 0px));
     min-height: 100vh;
 }
 
@@ -134,14 +137,16 @@ body::after {
     bottom: 0;
     left: 0;
     right: 0;
-    height: var(--nav-height);
+    height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 16px);
     background: linear-gradient(180deg, rgba(26, 26, 46, 0.85) 0%, rgba(26, 26, 46, 0.95) 100%);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border-top: 1px solid rgba(0, 212, 255, 0.15);
     display: flex;
     justify-content: space-around;
-    align-items: center;
+    align-items: flex-start;
+    padding-top: 8px;
     z-index: 1000;
 }
 
@@ -788,4 +793,118 @@ body::after {
 
 ::-webkit-scrollbar-thumb:hover {
     background: rgba(0, 212, 255, 0.5);
+}
+
+/* 学生档案样式 */
+.students-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.students-header h5 {
+    margin: 0;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+}
+
+.students-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.student-card {
+    background: linear-gradient(145deg, rgba(30, 30, 50, 0.6) 0%, rgba(20, 20, 35, 0.8) 100%);
+    border-radius: 14px;
+    padding: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.student-card:hover {
+    border-color: rgba(0, 212, 255, 0.2);
+    transform: translateX(4px);
+}
+
+.student-card .student-info {
+    flex: 1;
+}
+
+.student-card .student-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.student-card .student-detail {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.student-card .student-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-icon {
+    background: transparent;
+    border: none;
+    color: var(--neon-cyan);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 4px;
+    transition: all 0.3s ease;
+}
+
+.btn-icon:hover {
+    color: var(--neon-green);
+    transform: scale(1.1);
+}
+
+/* 详情行样式 */
+.session-detail .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.session-detail .detail-label {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.session-detail .detail-value {
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* 表单选择框 */
+.form-select {
+    background: rgba(15, 15, 25, 0.8);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    color: var(--text-primary);
+    border-radius: 10px;
+    padding: 10px 14px;
+    transition: all 0.3s ease;
+}
+
+.form-select:focus {
+    background: rgba(15, 15, 25, 0.9);
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1), 0 0 15px rgba(0, 212, 255, 0.2);
+    color: var(--text-primary);
+    outline: none;
 }

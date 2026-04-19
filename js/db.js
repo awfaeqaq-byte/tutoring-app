@@ -1,7 +1,8 @@
 // IndexedDB 数据库操作
 const DB_NAME = 'TutoringAppDB';
-const DB_VERSION = 1;
-const STORE_NAME = 'sessions';
+const DB_VERSION = 2;
+const SESSION_STORE = 'sessions';
+const STUDENT_STORE = 'students';
 
 let db = null;
 
@@ -18,24 +19,37 @@ async function initDB() {
 
         request.onupgradeneeded = (event) => {
             const database = event.target.result;
-            if (!database.objectStoreNames.contains(STORE_NAME)) {
-                const store = database.createObjectStore(STORE_NAME, {
+
+            // 课程存储
+            if (!database.objectStoreNames.contains(SESSION_STORE)) {
+                const sessionStore = database.createObjectStore(SESSION_STORE, {
                     keyPath: 'id',
                     autoIncrement: true
                 });
-                store.createIndex('session_date', 'session_date', { unique: false });
-                store.createIndex('status', 'status', { unique: false });
-                store.createIndex('subject', 'subject', { unique: false });
+                sessionStore.createIndex('session_date', 'session_date', { unique: false });
+                sessionStore.createIndex('status', 'status', { unique: false });
+                sessionStore.createIndex('subject', 'subject', { unique: false });
+                sessionStore.createIndex('series_id', 'series_id', { unique: false });
+            }
+
+            // 学生档案存储
+            if (!database.objectStoreNames.contains(STUDENT_STORE)) {
+                const studentStore = database.createObjectStore(STUDENT_STORE, {
+                    keyPath: 'id',
+                    autoIncrement: true
+                });
+                studentStore.createIndex('name', 'name', { unique: false });
             }
         };
     });
 }
 
-// 获取所有课程
+// ========== 课程操作 ==========
+
 async function getAllSessions() {
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction([STORE_NAME], 'readonly');
-        const store = transaction.objectStore(STORE_NAME);
+        const transaction = db.transaction([SESSION_STORE], 'readonly');
+        const store = transaction.objectStore(SESSION_STORE);
         const request = store.getAll();
 
         request.onerror = () => reject(request.error);
@@ -43,11 +57,10 @@ async function getAllSessions() {
     });
 }
 
-// 添加课程
 async function addSession(session) {
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction([STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
+        const transaction = db.transaction([SESSION_STORE], 'readwrite');
+        const store = transaction.objectStore(SESSION_STORE);
         const request = store.add(session);
 
         request.onerror = () => reject(request.error);
@@ -55,11 +68,10 @@ async function addSession(session) {
     });
 }
 
-// 更新课程
 async function updateSession(session) {
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction([STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
+        const transaction = db.transaction([SESSION_STORE], 'readwrite');
+        const store = transaction.objectStore(SESSION_STORE);
         const request = store.put(session);
 
         request.onerror = () => reject(request.error);
@@ -67,11 +79,10 @@ async function updateSession(session) {
     });
 }
 
-// 删除课程
 async function deleteSessionDB(id) {
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction([STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
+        const transaction = db.transaction([SESSION_STORE], 'readwrite');
+        const store = transaction.objectStore(SESSION_STORE);
         const request = store.delete(id);
 
         request.onerror = () => reject(request.error);
@@ -79,11 +90,10 @@ async function deleteSessionDB(id) {
     });
 }
 
-// 获取单个课程
 async function getSession(id) {
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction([STORE_NAME], 'readonly');
-        const store = transaction.objectStore(STORE_NAME);
+        const transaction = db.transaction([SESSION_STORE], 'readonly');
+        const store = transaction.objectStore(SESSION_STORE);
         const request = store.get(id);
 
         request.onerror = () => reject(request.error);
@@ -91,7 +101,6 @@ async function getSession(id) {
     });
 }
 
-// 按日期范围查询
 async function getSessionsByDateRange(startDate, endDate) {
     const allSessions = await getAllSessions();
     return allSessions.filter(s => {
@@ -100,14 +109,77 @@ async function getSessionsByDateRange(startDate, endDate) {
     });
 }
 
-// 清空所有数据
-async function clearAllSessions() {
+// 删除系列课程（批量删除循环课程）
+async function deleteSeriesSessions(seriesId) {
+    const allSessions = await getAllSessions();
+    const seriesSessions = allSessions.filter(s => s.series_id === seriesId);
+
+    const transaction = db.transaction([SESSION_STORE], 'readwrite');
+    const store = transaction.objectStore(SESSION_STORE);
+
+    for (const session of seriesSessions) {
+        store.delete(session.id);
+    }
+
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction([STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-        const request = store.clear();
+        transaction.oncomplete = () => resolve(seriesSessions.length);
+        transaction.onerror = () => reject(transaction.error);
+    });
+}
+
+// ========== 学生档案操作 ==========
+
+async function getAllStudents() {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STUDENT_STORE], 'readonly');
+        const store = transaction.objectStore(STUDENT_STORE);
+        const request = store.getAll();
+
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result || []);
+    });
+}
+
+async function addStudent(student) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STUDENT_STORE], 'readwrite');
+        const store = transaction.objectStore(STUDENT_STORE);
+        const request = store.add(student);
+
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+    });
+}
+
+async function updateStudent(student) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STUDENT_STORE], 'readwrite');
+        const store = transaction.objectStore(STUDENT_STORE);
+        const request = store.put(student);
+
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+    });
+}
+
+async function deleteStudentDB(id) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STUDENT_STORE], 'readwrite');
+        const store = transaction.objectStore(STUDENT_STORE);
+        const request = store.delete(id);
 
         request.onerror = () => reject(request.error);
         request.onsuccess = () => resolve();
+    });
+}
+
+async function getStudent(id) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STUDENT_STORE], 'readonly');
+        const store = transaction.objectStore(STUDENT_STORE);
+        const request = store.get(id);
+
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
     });
 }

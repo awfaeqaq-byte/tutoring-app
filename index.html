@@ -2,10 +2,10 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>家教安排助手</title>
     <meta name="description" content="个人家教安排管理工具">
-    <meta name="theme-color" content="#00d4ff">
+    <meta name="theme-color" content="#0a1628">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -83,6 +83,17 @@
         </div>
     </main>
 
+    <!-- 学生档案视图 -->
+    <main class="app-main hidden" id="students-view">
+        <div class="students-header">
+            <h5 class="neon-text">学生档案</h5>
+            <button class="btn-neon btn-sm" onclick="showAddStudentDrawer()">
+                <i class="bi bi-plus"></i> 添加学生
+            </button>
+        </div>
+        <div class="students-list" id="students-list"></div>
+    </main>
+
     <!-- 统计视图 -->
     <main class="app-main hidden" id="stats-view">
         <div class="income-stats">
@@ -127,6 +138,12 @@
                 <span>月视图</span>
             </a>
         </div>
+        <div class="nav-item" data-view="students" onclick="switchView('students')">
+            <a href="javascript:void(0)">
+                <i class="bi bi-people"></i>
+                <span>学生</span>
+            </a>
+        </div>
         <div class="nav-item" data-view="stats" onclick="switchView('stats')">
             <a href="javascript:void(0)">
                 <i class="bi bi-bar-chart"></i>
@@ -159,6 +176,12 @@
         <div class="drawer-body">
             <form id="session-form">
                 <input type="hidden" name="id" id="edit-session-id">
+                <div class="mb-3">
+                    <label class="form-label">选择学生（快速填充）</label>
+                    <select class="form-select" name="student_select" id="student-select" onchange="fillFromStudent()">
+                        <option value="">-- 手动输入 --</option>
+                    </select>
+                </div>
                 <div class="mb-3">
                     <label class="form-label">学生姓名</label>
                     <input type="text" class="form-control" name="student_name" required>
@@ -204,6 +227,57 @@
                     <textarea class="form-control" name="notes" rows="2"></textarea>
                 </div>
                 <button type="button" class="btn-neon w-100" onclick="saveSession()">保存</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 添加学生抽屉 -->
+    <div class="drawer-overlay" id="student-overlay" onclick="closeStudentDrawer()"></div>
+    <div class="bottom-drawer" id="student-drawer">
+        <div class="drawer-header">
+            <h5 class="drawer-title">学生档案</h5>
+            <button class="drawer-close" onclick="closeStudentDrawer()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="drawer-body">
+            <form id="student-form">
+                <input type="hidden" name="id" id="edit-student-id">
+                <div class="mb-3">
+                    <label class="form-label">学生姓名</label>
+                    <input type="text" class="form-control" name="name" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">科目</label>
+                    <input type="text" class="form-control" name="subject" placeholder="如：数学、物理、化学...">
+                </div>
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="form-label">开始时间</label>
+                        <input type="time" class="form-control" name="default_start_time">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">结束时间</label>
+                        <input type="time" class="form-control" name="default_end_time">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">默认金额 (元)</label>
+                    <input type="number" class="form-control" name="default_amount" step="0.01">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">上课地址</label>
+                    <input type="text" class="form-control" name="default_address">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">联系电话</label>
+                    <input type="tel" class="form-control" name="phone">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">备注</label>
+                    <textarea class="form-control" name="notes" rows="2"></textarea>
+                </div>
+                <button type="button" class="btn-neon w-100" onclick="saveStudent()">保存</button>
             </form>
         </div>
     </div>
