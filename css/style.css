@@ -129,6 +129,48 @@ body::after {
     padding-top: calc(var(--header-height) + 16px + env(safe-area-inset-top, 0px));
     padding-bottom: calc(var(--nav-height) + 32px + env(safe-area-inset-bottom, 0px));
     min-height: 100vh;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.slide-right {
+    animation: slideInRight 0.3s ease;
+}
+
+.slide-left {
+    animation: slideInLeft 0.3s ease;
 }
 
 /* 底部导航栏 */

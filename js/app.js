@@ -2,26 +2,73 @@
 let currentWeekStart = null;
 let currentYear = null;
 let currentMonth = null;
+let currentView = 'week';
+let touchStartX = 0;
+let touchEndX = 0;
 
 const daysOfWeek = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 const subjectColors = [
     '#00d4ff', '#00ff88', '#bf00ff', '#ff6b35', '#ffd700',
     '#00ffff', '#ff0080', '#7fff00', '#ff4500', '#9400d3'
 ];
+const viewOrder = ['week', 'month', 'students', 'stats'];
 
 // 初始化应用
 document.addEventListener('DOMContentLoaded', async () => {
     await initDB();
     loadWeekView();
     initSubjectColorStyles();
+    initGestures();
 });
 
+// 手势初始化
+function initGestures() {
+    document.body.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    document.body.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    }, { passive: true });
+}
+
+function handleSwipe() {
+    const swipeThreshold = 80;
+    const diff = touchStartX - touchEndX;
+
+    if (Math.abs(diff) < swipeThreshold) return;
+
+    const currentIndex = viewOrder.indexOf(currentView);
+
+    if (diff > 0) {
+        // 左滑 - 下一个视图
+        const nextIndex = (currentIndex + 1) % viewOrder.length;
+        switchView(viewOrder[nextIndex], 'slide-right');
+    } else {
+        // 右滑 - 上一个视图
+        const prevIndex = (currentIndex - 1 + viewOrder.length) % viewOrder.length;
+        switchView(viewOrder[prevIndex], 'slide-left');
+    }
+}
+
 // 视图切换
-function switchView(view) {
+function switchView(view, animation = null) {
+    const prevView = currentView;
+    currentView = view;
+
     document.querySelectorAll('.app-main').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
 
-    document.getElementById(`${view}-view`).classList.remove('hidden');
+    const newViewEl = document.getElementById(`${view}-view`);
+    newViewEl.classList.remove('hidden');
+
+    // 添加动画
+    if (animation) {
+        newViewEl.classList.add(animation);
+        setTimeout(() => newViewEl.classList.remove(animation), 300);
+    }
+
     document.querySelector(`.nav-item[data-view="${view}"]`).classList.add('active');
 
     if (view === 'week') loadWeekView();
