@@ -148,7 +148,18 @@ body::after {
 .view-content {
     flex: 1;
     overflow-y: auto;
+}
+
+.view-content.animate-in {
     animation: fadeIn 0.3s ease;
+}
+
+.view-content.slide-right {
+    animation: slideInRight 0.3s ease;
+}
+
+.view-content.slide-left {
+    animation: slideInLeft 0.3s ease;
 }
 
 @keyframes fadeIn {
@@ -190,6 +201,23 @@ body::after {
 
 .slide-left {
     animation: slideInLeft 0.3s ease;
+}
+
+.view-header {
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    background: linear-gradient(180deg, rgba(10, 22, 40, 1) 0%, rgba(10, 22, 40, 0.95) 80%, transparent 100%);
+    padding: 8px 0 16px 0;
+    z-index: 10;
+    margin: -16px -16px 0 -16px;
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+.view-content {
+    flex: 1;
+    overflow-y: auto;
 }
 
 /* 底部导航栏 */

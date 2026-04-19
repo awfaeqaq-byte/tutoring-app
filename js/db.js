@@ -6,6 +6,11 @@ const STUDENT_STORE = 'students';
 
 let db = null;
 
+// 获取数据库实例
+function getDB() {
+    return db;
+}
+
 // 初始化数据库
 async function initDB() {
     return new Promise((resolve, reject) => {

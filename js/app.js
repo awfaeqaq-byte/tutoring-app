@@ -63,10 +63,11 @@ function switchView(view, animation = null) {
     const newViewEl = document.getElementById(`${view}-view`);
     newViewEl.classList.remove('hidden');
 
-    // 添加动画（仅当有指定动画时）
-    if (animation) {
-        newViewEl.classList.add(animation);
-        setTimeout(() => newViewEl.classList.remove(animation), 300);
+    // 动画只应用到内容区域
+    const viewContent = newViewEl.querySelector('.view-content');
+    if (viewContent && animation) {
+        viewContent.classList.add(animation);
+        setTimeout(() => viewContent.classList.remove(animation), 300);
     }
 
     document.querySelector(`.nav-item[data-view="${view}"]`).classList.add('active');
@@ -599,7 +600,7 @@ async function showSessionDrawer(sessionId) {
     // 批量删除按钮（如果是循环课程）
     const deleteButtons = session.is_recurring && session.series_id
         ? `<button class="btn-neon btn-danger" onclick="deleteSession(${session.id})">删除本次</button>
-           <button class="btn-neon btn-danger" onclick="deleteSeries(${session.id}, '${session.series_id}')">删除全部循环</button>`
+           <button class="btn-neon btn-danger" onclick="deleteFutureSessions(${session.id}, '${session.series_id}', '${session.session_date}')">删除本次及之后</button>`
         : `<button class="btn-neon btn-danger" onclick="deleteSession(${session.id})">删除</button>`;
 
     document.getElementById('drawer-body').innerHTML = `
@@ -857,7 +858,7 @@ async function deleteSession(sessionId) {
     }
 }
 
-// 批量删除循环课程
+// 批量删除循环课程（全部）
 async function deleteSeries(sessionId, seriesId) {
     if (!confirm('确定要删除这个循环课程的所有课程吗？此操作不可恢复。')) return;
 
@@ -866,6 +867,38 @@ async function deleteSeries(sessionId, seriesId) {
         closeDrawer();
         loadWeekView();
         alert(`已删除 ${count} 节课程`);
+    } catch (error) {
+        console.error('删除失败:', error);
+        alert('删除失败，请重试');
+    }
+}
+
+// 删除当前课程及之后的循环课程
+async function deleteFutureSessions(sessionId, seriesId, currentDate) {
+    if (!confirm('确定要删除本次及之后的所有循环课程吗？\n\n之前的课程将保留。')) return;
+
+    try {
+        const allSessions = await getAllSessions();
+        const futureSessions = allSessions.filter(s =>
+            s.series_id === seriesId && s.session_date >= currentDate
+        );
+
+        const database = getDB();
+        const transaction = database.transaction(['sessions'], 'readwrite');
+        const store = transaction.objectStore('sessions');
+
+        for (const session of futureSessions) {
+            store.delete(session.id);
+        }
+
+        await new Promise((resolve, reject) => {
+            transaction.oncomplete = resolve;
+            transaction.onerror = reject;
+        });
+
+        closeDrawer();
+        loadWeekView();
+        alert(`已删除 ${futureSessions.length} 节课程`);
     } catch (error) {
         console.error('删除失败:', error);
         alert('删除失败，请重试');
