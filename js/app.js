@@ -63,7 +63,7 @@ function switchView(view, animation = null) {
     const newViewEl = document.getElementById(`${view}-view`);
     newViewEl.classList.remove('hidden');
 
-    // 添加动画
+    // 添加动画（仅当有指定动画时）
     if (animation) {
         newViewEl.classList.add(animation);
         setTimeout(() => newViewEl.classList.remove(animation), 300);
@@ -181,14 +181,23 @@ function renderDaySessions(sessions) {
         const subjectClass = `subject-color-${colorIndex}`;
         return `
             <div class="session-card ${subjectClass} ${session.status}"
-                 onclick="showSessionDrawer(${session.id})"
                  data-session-id="${session.id}">
-                <div class="session-time">${formatTime(session.start_time)}-${formatTime(session.end_time)}
-                    ${session.is_recurring ? '<i class="bi bi-arrow-repeat ms-1"></i>' : ''}
+                <div class="session-card-content" onclick="showSessionDrawer(${session.id})">
+                    <div class="session-time">${formatTime(session.start_time)}-${formatTime(session.end_time)}
+                        ${session.is_recurring ? '<i class="bi bi-arrow-repeat ms-1"></i>' : ''}
+                    </div>
+                    <div class="student-name">${session.student_name}</div>
+                    <div class="session-info">${session.subject}</div>
+                    <div class="amount">¥${parseFloat(session.amount).toFixed(0)}</div>
                 </div>
-                <div class="student-name">${session.student_name}</div>
-                <div class="session-info">${session.subject}</div>
-                <div class="amount">¥${parseFloat(session.amount).toFixed(0)}</div>
+                <div class="session-card-actions">
+                    <button class="action-btn edit-btn" onclick="event.stopPropagation(); editSession(${session.id})" title="编辑">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="action-btn delete-btn" onclick="event.stopPropagation(); deleteSession(${session.id})" title="删除">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
             </div>
         `;
     }).join('');
@@ -271,7 +280,8 @@ async function renderMonthCalendar() {
                  style="background: ${bgColor};"
                  onclick="showDayInWeek('${dateStr}')">
                 <span class="day-num ${daySessions.length > 0 ? 'neon-text' : ''}">${day}</span>
-                ${daySessions.length > 0 ? `<span class="day-dots">${'●'.repeat(Math.min(daySessions.length, 3))}</span>` : ''}
+                ${dayIncome > 0 ? `<span class="day-income">¥${dayIncome.toFixed(0)}</span>` : ''}
+                ${daySessions.length > 0 && dayIncome === 0 ? `<span class="day-dots">${'●'.repeat(Math.min(daySessions.length, 3))}</span>` : ''}
             </div>
         `;
 
@@ -587,8 +597,9 @@ async function showSessionDrawer(sessionId) {
         : `<button class="btn-neon" onclick="markCompleted(${session.id})">标记完成</button>`;
 
     // 批量删除按钮（如果是循环课程）
-    const deleteButton = session.is_recurring && session.series_id
-        ? `<button class="btn-neon btn-danger" onclick="deleteSeries(${session.id}, '${session.series_id}')">删除全部循环</button>`
+    const deleteButtons = session.is_recurring && session.series_id
+        ? `<button class="btn-neon btn-danger" onclick="deleteSession(${session.id})">删除本次</button>
+           <button class="btn-neon btn-danger" onclick="deleteSeries(${session.id}, '${session.series_id}')">删除全部循环</button>`
         : `<button class="btn-neon btn-danger" onclick="deleteSession(${session.id})">删除</button>`;
 
     document.getElementById('drawer-body').innerHTML = `
@@ -625,7 +636,7 @@ async function showSessionDrawer(sessionId) {
             ${actionButton}
         </div>
         <div class="drawer-actions" style="margin-top: 8px;">
-            ${deleteButton}
+            ${deleteButtons}
         </div>
     `;
 
