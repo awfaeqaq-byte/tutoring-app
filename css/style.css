@@ -156,11 +156,50 @@ body::after {
 }
 
 .view-content.slide-right {
-    animation: slideInRight 0.3s ease;
+    animation: slideInRight 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .view-content.slide-left {
-    animation: slideInLeft 0.3s ease;
+    animation: slideInLeft 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 视图切换时的内容动画 */
+.view-content .weekly-income-bar,
+.view-content .income-card,
+.view-content .income-stats,
+.view-content .student-card,
+.view-content .day-column,
+.view-content .chart-card {
+    animation: fadeUp 0.4s ease backwards;
+}
+
+.view-content .weekly-income-bar { animation-delay: 0.05s; }
+.view-content .income-card { animation-delay: 0.05s; }
+.view-content .income-stats { animation-delay: 0.05s; }
+.view-content .day-column:nth-child(1) { animation-delay: 0.05s; }
+.view-content .day-column:nth-child(2) { animation-delay: 0.1s; }
+.view-content .day-column:nth-child(3) { animation-delay: 0.15s; }
+.view-content .day-column:nth-child(4) { animation-delay: 0.2s; }
+.view-content .day-column:nth-child(5) { animation-delay: 0.25s; }
+.view-content .day-column:nth-child(6) { animation-delay: 0.3s; }
+.view-content .day-column:nth-child(7) { animation-delay: 0.35s; }
+.view-content .chart-card:nth-child(1) { animation-delay: 0.1s; }
+.view-content .chart-card:nth-child(2) { animation-delay: 0.2s; }
+.view-content .student-card:nth-child(1) { animation-delay: 0.05s; }
+.view-content .student-card:nth-child(2) { animation-delay: 0.1s; }
+.view-content .student-card:nth-child(3) { animation-delay: 0.15s; }
+.view-content .student-card:nth-child(4) { animation-delay: 0.2s; }
+.view-content .student-card:nth-child(5) { animation-delay: 0.25s; }
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes fadeIn {
@@ -243,6 +282,7 @@ body::after {
 .nav-item {
     flex: 1;
     text-align: center;
+    position: relative;
 }
 
 .nav-item a {
@@ -253,13 +293,14 @@ body::after {
     color: var(--text-secondary);
     text-decoration: none;
     font-size: 0.7rem;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 8px 0;
+    position: relative;
 }
 
 .nav-item a i {
     font-size: 1.4rem;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .nav-item.active a {
@@ -268,6 +309,57 @@ body::after {
 
 .nav-item.active a i {
     text-shadow: 0 0 8px var(--neon-cyan), 0 0 16px var(--neon-cyan);
+    transform: scale(1.1);
+}
+
+/* 导航项点击动画 */
+.nav-item:active a i {
+    transform: scale(0.85);
+}
+
+/* 激活指示器 */
+.nav-item.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 3px;
+    background: var(--neon-cyan);
+    border-radius: 0 0 3px 3px;
+    box-shadow: 0 0 10px var(--neon-cyan);
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* 导航切换涟漪效果 */
+.nav-item a::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: radial-gradient(circle, rgba(0, 212, 255, 0.3) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease;
+}
+
+.nav-item.active a::after {
+    width: 60px;
+    height: 60px;
 }
 
 /* 周导航 */
