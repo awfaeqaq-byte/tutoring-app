@@ -879,9 +879,17 @@ async function deleteFutureSessions(sessionId, seriesId, currentDate) {
 
     try {
         const allSessions = await getAllSessions();
-        const futureSessions = allSessions.filter(s =>
-            s.series_id === seriesId && s.session_date >= currentDate
-        );
+        console.log('所有课程:', allSessions.length);
+        console.log('当前series_id:', seriesId);
+        console.log('当前日期:', currentDate);
+
+        const futureSessions = allSessions.filter(s => {
+            const match = s.series_id === seriesId && s.session_date >= currentDate;
+            console.log(`课程 ${s.id}: series_id=${s.series_id}, date=${s.session_date}, match=${match}`);
+            return match;
+        });
+
+        console.log('要删除的课程:', futureSessions.length);
 
         const database = getDB();
         const transaction = database.transaction(['sessions'], 'readwrite');

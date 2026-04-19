@@ -33,10 +33,10 @@ body {
     background: linear-gradient(135deg, #0a1628 0%, #0d2137 25%, #102a43 50%, #0d2137 75%, #0a1628 100%);
     color: var(--text-primary);
     min-height: 100vh;
+    height: 100%;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     position: relative;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
 }
@@ -125,29 +125,27 @@ body::after {
 
 /* 主内容区域 */
 .app-main {
-    padding: 16px;
-    padding-top: calc(var(--header-height) + 16px + env(safe-area-inset-top, 0px));
-    padding-bottom: calc(var(--nav-height) + 32px + env(safe-area-inset-bottom, 0px));
-    min-height: 100vh;
     display: flex;
     flex-direction: column;
+    height: calc(100vh - var(--header-height) - var(--nav-height) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    margin-top: calc(var(--header-height) + env(safe-area-inset-top, 0px));
+    margin-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+    overflow: hidden;
 }
 
 .view-header {
     flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    background: linear-gradient(180deg, rgba(10, 22, 40, 1) 0%, rgba(10, 22, 40, 0.95) 80%, transparent 100%);
-    padding: 8px 0 16px 0;
+    background: rgba(10, 22, 40, 0.95);
+    padding: 16px;
     z-index: 10;
-    margin: -16px -16px 0 -16px;
-    padding-left: 16px;
-    padding-right: 16px;
+    border-bottom: 1px solid rgba(0, 150, 255, 0.1);
 }
 
 .view-content {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 16px 16px 16px;
 }
 
 .view-content.animate-in {
@@ -274,8 +272,7 @@ body::after {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding: 12px 0;
+    margin-bottom: 0;
 }
 
 .week-nav-btn {
@@ -307,6 +304,7 @@ body::after {
     background: linear-gradient(135deg, rgba(30, 30, 50, 0.6) 0%, rgba(20, 20, 35, 0.8) 100%);
     border-radius: 12px;
     margin-bottom: 16px;
+    margin-top: 8px;
     border: 1px solid rgba(0, 255, 136, 0.15);
 }
 
@@ -949,15 +947,6 @@ body::after {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0;
-    flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    background: linear-gradient(180deg, rgba(10, 22, 40, 1) 0%, rgba(10, 22, 40, 0.95) 80%, transparent 100%);
-    padding: 8px 0 16px 0;
-    z-index: 10;
-    margin: -16px -16px 0 -16px;
-    padding-left: 16px;
-    padding-right: 16px;
 }
 
 .students-header h5 {
@@ -973,7 +962,7 @@ body::after {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding-top: 16px;
+    padding-top: 8px;
 }
 
 .student-card {
