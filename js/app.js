@@ -346,10 +346,10 @@ function renderStudentsList(students) {
 
     if (students.length === 0) {
         container.innerHTML = `
-            <div class="text-center text-muted py-5">
-                <i class="bi bi-people" style="font-size: 3rem; opacity: 0.3;"></i>
-                <p class="mt-3">暂无学生档案</p>
-                <p class="small">添加学生后可快速创建课程</p>
+            <div class="students-empty">
+                <i class="bi bi-people-fill"></i>
+                <p class="empty-title">暂无学生档案</p>
+                <p class="empty-hint">添加学生后可快速创建课程</p>
             </div>
         `;
         return;
@@ -359,12 +359,15 @@ function renderStudentsList(students) {
         <div class="student-card" onclick="showStudentDrawer(${student.id})">
             <div class="student-info">
                 <div class="student-name">${student.name}</div>
-                <div class="student-detail">${student.subject || '未设置科目'}</div>
+                <div class="student-detail">
+                    <i class="bi bi-book"></i> ${student.subject || '未设置科目'}
+                </div>
                 ${student.default_address ? `<div class="student-detail"><i class="bi bi-geo-alt"></i> ${student.default_address}</div>` : ''}
+                ${student.phone ? `<div class="student-detail"><i class="bi bi-telephone"></i> ${student.phone}</div>` : ''}
             </div>
             <div class="student-actions">
                 <button class="btn-icon" onclick="event.stopPropagation(); quickAddSession(${student.id})" title="快速添加课程">
-                    <i class="bi bi-plus-circle"></i>
+                    <i class="bi bi-plus-lg"></i>
                 </button>
             </div>
         </div>
