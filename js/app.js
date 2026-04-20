@@ -196,32 +196,47 @@ function animateToNextWeek(direction) {
     currentCard.style.transition = 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
     currentCard.style.transform = `translateX(${-cardWidth}px)`;
 
-    setTimeout(() => {
-        // 加载下一周
-        const nextDate = new Date(currentWeekStart);
-        nextDate.setDate(nextDate.getDate() + 7);
-        currentDayIndex = 0; // 下一周显示周一
-        currentWeekStart = getWeekStart(nextDate.toISOString().split('T')[0]);
-        renderWeekCards();
-        renderDayIndicator();
-        loadWeekIncome();
+    // 先准备下一周的数据
+    const nextDate = new Date(currentWeekStart);
+    nextDate.setDate(nextDate.getDate() + 7);
+    const nextWeekStart = getWeekStart(nextDate.toISOString().split('T')[0]);
 
-        // 新卡片从右边滑入
-        const newCard = container.querySelector('.day-card.active');
+    // 渲染新卡片（但先隐藏）
+    const savedIndex = currentDayIndex;
+    currentDayIndex = 0;
+    currentWeekStart = nextWeekStart;
+
+    // 获取下一周数据并渲染
+    renderWeekCards();
+    renderDayIndicator();
+    loadWeekIncome();
+
+    // 获取新卡片并设置初始位置
+    const newCard = container.querySelector('.day-card.active');
+    if (newCard) {
+        newCard.classList.remove('hidden');
+        newCard.style.transition = 'none';
+        newCard.style.transform = `translateX(${cardWidth}px)`;
+    }
+
+    // 强制重绘后开始动画
+    requestAnimationFrame(() => {
         if (newCard) {
-            newCard.style.transform = `translateX(${cardWidth}px)`;
-            newCard.offsetHeight; // 强制重绘
             newCard.style.transition = 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
             newCard.style.transform = 'translateX(0)';
         }
+    });
 
-        setTimeout(() => {
-            if (newCard) {
-                newCard.style.transition = '';
-                newCard.style.transform = '';
-            }
-            isAnimating = false;
-        }, 250);
+    setTimeout(() => {
+        if (currentCard) {
+            currentCard.style.transition = '';
+            currentCard.style.transform = '';
+        }
+        if (newCard) {
+            newCard.style.transition = '';
+            newCard.style.transform = '';
+        }
+        isAnimating = false;
     }, 250);
 }
 
@@ -237,32 +252,45 @@ function animateToPrevWeek(direction) {
     currentCard.style.transition = 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
     currentCard.style.transform = `translateX(${cardWidth}px)`;
 
-    setTimeout(() => {
-        // 加载上一周
-        const prevDate = new Date(currentWeekStart);
-        prevDate.setDate(prevDate.getDate() - 7);
-        currentDayIndex = 6; // 上一周显示周日
-        currentWeekStart = getWeekStart(prevDate.toISOString().split('T')[0]);
-        renderWeekCards();
-        renderDayIndicator();
-        loadWeekIncome();
+    // 先准备上一周的数据
+    const prevDate = new Date(currentWeekStart);
+    prevDate.setDate(prevDate.getDate() - 7);
+    const prevWeekStart = getWeekStart(prevDate.toISOString().split('T')[0]);
 
-        // 新卡片从左边滑入
-        const newCard = container.querySelector('.day-card.active');
+    // 渲染新卡片
+    currentDayIndex = 6;
+    currentWeekStart = prevWeekStart;
+
+    renderWeekCards();
+    renderDayIndicator();
+    loadWeekIncome();
+
+    // 获取新卡片并设置初始位置
+    const newCard = container.querySelector('.day-card.active');
+    if (newCard) {
+        newCard.classList.remove('hidden');
+        newCard.style.transition = 'none';
+        newCard.style.transform = `translateX(${-cardWidth}px)`;
+    }
+
+    // 强制重绘后开始动画
+    requestAnimationFrame(() => {
         if (newCard) {
-            newCard.style.transform = `translateX(${-cardWidth}px)`;
-            newCard.offsetHeight; // 强制重绘
             newCard.style.transition = 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
             newCard.style.transform = 'translateX(0)';
         }
+    });
 
-        setTimeout(() => {
-            if (newCard) {
-                newCard.style.transition = '';
-                newCard.style.transform = '';
-            }
-            isAnimating = false;
-        }, 250);
+    setTimeout(() => {
+        if (currentCard) {
+            currentCard.style.transition = '';
+            currentCard.style.transform = '';
+        }
+        if (newCard) {
+            newCard.style.transition = '';
+            newCard.style.transform = '';
+        }
+        isAnimating = false;
     }, 250);
 }
 
