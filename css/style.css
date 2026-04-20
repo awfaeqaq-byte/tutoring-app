@@ -342,8 +342,9 @@ body {
 
 .card-header-section {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
+    gap: 12px;
     margin-bottom: 16px;
 }
 
@@ -381,20 +382,19 @@ body {
 .day-income-badge {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
+    gap: 4px;
+    padding: 4px 10px;
     background: rgba(75, 76, 237, 0.1);
-    border-radius: 12px;
-    margin-bottom: 16px;
+    border-radius: 8px;
 }
 
 .day-income-badge .income-label {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text-secondary);
 }
 
 .day-income-badge .income-value {
-    font-size: 18px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--accent-amount);
 }
