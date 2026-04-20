@@ -582,12 +582,14 @@ function renderDayCards() {
                         <span class="day-name">${daysOfWeek[i]}</span>
                         <span class="day-date">${formatDateOnly(dateStr)}</span>
                     </div>
-                    <div class="day-income-badge">
-                        <span class="income-label">¥</span>
-                        <span class="income-value">${calculateDayIncome(daySessions)}</span>
+                    <div class="card-header-right">
+                        <div class="day-income-badge">
+                            <span class="income-label">¥</span>
+                            <span class="income-value">${calculateDayIncome(daySessions)}</span>
+                        </div>
+                        ${isToday ? '<div class="today-badge">今天</div>' : ''}
+                        ${isPast && allCompleted ? '<div class="completed-badge"><i class="bi bi-check-circle-fill"></i></div>' : ''}
                     </div>
-                    ${isToday ? '<div class="today-badge">今天</div>' : ''}
-                    ${isPast && allCompleted ? '<div class="completed-badge"><i class="bi bi-check-circle-fill"></i></div>' : ''}
                 </div>
                 <div class="sessions-list">
                     ${renderDaySessions(daySessions, isPast)}

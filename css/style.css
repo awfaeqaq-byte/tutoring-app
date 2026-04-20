@@ -342,9 +342,8 @@ body {
 
 .card-header-section {
     display: flex;
-    justify-content: flex-start;
+    justify-content: space-between;
     align-items: center;
-    gap: 12px;
     margin-bottom: 16px;
 }
 
@@ -363,6 +362,12 @@ body {
     font-size: 12px;
     color: var(--text-secondary);
     margin-top: 2px;
+}
+
+.card-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .today-badge {
