@@ -4,8 +4,8 @@
   "description": "个人家教安排管理工具，离线可用",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0a1628",
-  "theme_color": "#00d4ff",
+  "background_color": "#03050d",
+  "theme_color": "#03050d",
   "orientation": "portrait",
   "scope": "./",
   "icons": [

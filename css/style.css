@@ -114,7 +114,7 @@ body {
     top: calc(var(--header-height) + env(safe-area-inset-top, 0px));
     left: 0;
     right: 0;
-    bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+    bottom: var(--nav-height);
     overflow-y: auto;
     overflow-x: hidden;
     background: var(--bg-primary);
@@ -324,11 +324,12 @@ body {
     flex-direction: column;
     gap: 16px;
     position: relative;
-    min-height: 400px;
+    min-height: 500px;
 }
 
 .day-card.active {
     border-color: rgba(0, 178, 255, 0.3);
+    min-height: 450px;
 }
 
 .card-header-section {
@@ -395,12 +396,18 @@ body {
     flex-direction: column;
     gap: 10px;
     margin-bottom: 16px;
+    min-height: 120px;
 }
 
 .empty-sessions {
     text-align: center;
-    padding: 30px 20px;
+    padding: 40px 20px;
     color: var(--text-secondary);
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .empty-sessions i {
@@ -495,16 +502,29 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    height: var(--nav-height);
+    padding-bottom: 20px; /* 默认底部间距 */
     background: var(--nav-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid var(--nav-border);
     display: flex;
     justify-content: space-around;
-    align-items: center;
+    align-items: flex-start;
+    padding-top: 10px;
     z-index: 1000;
+}
+
+/* 支持安全区域 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .app-nav {
+        height: calc(var(--nav-height) + env(safe-area-inset-bottom));
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .app-main {
+        bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
+    }
 }
 
 .nav-item {
