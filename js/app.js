@@ -13,6 +13,8 @@ let isAnimating = false;
 let cardStartX = 0;
 let cardCurrentX = 0;
 let isDragging = false;
+let dragStartTime = 0;
+let dragVelocity = 0;
 
 const daysOfWeek = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 const subjectColors = [
@@ -78,11 +80,16 @@ function initCardSlider() {
         isDragging = true;
         cardStartX = e.changedTouches[0].clientX;
         cardCurrentX = 0;
+        dragStartTime = Date.now();
+        dragVelocity = 0;
     }, { passive: true });
 
     container.addEventListener('touchmove', (e) => {
         if (!isDragging || isAnimating) return;
-        cardCurrentX = e.changedTouches[0].clientX - cardStartX;
+        const newX = e.changedTouches[0].clientX - cardStartX;
+        dragVelocity = (newX - cardCurrentX) / (Date.now() - dragStartTime || 1);
+        cardCurrentX = newX;
+        dragStartTime = Date.now();
         updateCardPosition(cardCurrentX);
     }, { passive: true });
 
@@ -98,32 +105,48 @@ function updateCardPosition(deltaX) {
     const currentCard = container.querySelector('.day-card.active');
     if (!currentCard) return;
 
+    const cardWidth = currentCard.offsetWidth;
+
     // 当前卡片跟随手指移动
     currentCard.style.transform = `translateX(${deltaX}px)`;
     currentCard.style.transition = 'none';
 
-    // 计算相邻卡片的偏移
-    const cardWidth = currentCard.offsetWidth;
-    const progress = deltaX / cardWidth;
-
     // 显示并移动相邻卡片
     const cards = container.querySelectorAll('.day-card');
 
-    if (deltaX < 0 && currentDayIndex < 6) {
-        // 左滑，显示下一天的卡片
-        const nextCard = cards[currentDayIndex + 1];
-        if (nextCard) {
-            nextCard.classList.remove('hidden');
-            nextCard.style.transform = `translateX(${cardWidth + deltaX}px)`;
-            nextCard.style.transition = 'none';
+    if (deltaX < 0) {
+        // 左滑，显示下一天的卡片或下周提示
+        if (currentDayIndex < 6) {
+            const nextCard = cards[currentDayIndex + 1];
+            if (nextCard) {
+                nextCard.classList.remove('hidden');
+                nextCard.style.transform = `translateX(${cardWidth + deltaX}px)`;
+                nextCard.style.transition = 'none';
+            }
         }
-    } else if (deltaX > 0 && currentDayIndex > 0) {
-        // 右滑，显示前一天的卡片
-        const prevCard = cards[currentDayIndex - 1];
-        if (prevCard) {
-            prevCard.classList.remove('hidden');
-            prevCard.style.transform = `translateX(${-cardWidth + deltaX}px)`;
-            prevCard.style.transition = 'none';
+        // 隐藏前一天的卡片
+        if (currentDayIndex > 0) {
+            const prevCard = cards[currentDayIndex - 1];
+            if (prevCard) {
+                prevCard.classList.add('hidden');
+            }
+        }
+    } else if (deltaX > 0) {
+        // 右滑，显示前一天的卡片或上周提示
+        if (currentDayIndex > 0) {
+            const prevCard = cards[currentDayIndex - 1];
+            if (prevCard) {
+                prevCard.classList.remove('hidden');
+                prevCard.style.transform = `translateX(${-cardWidth + deltaX}px)`;
+                prevCard.style.transition = 'none';
+            }
+        }
+        // 隐藏下一天的卡片
+        if (currentDayIndex < 6) {
+            const nextCard = cards[currentDayIndex + 1];
+            if (nextCard) {
+                nextCard.classList.add('hidden');
+            }
         }
     }
 }
@@ -133,15 +156,36 @@ function handleCardSwipeEnd() {
     const currentCard = container.querySelector('.day-card.active');
     const cardWidth = currentCard ? currentCard.offsetWidth : 300;
 
-    // 判断是否切换
-    const threshold = cardWidth * 0.3;
+    // 判断是否切换 - 结合滑动距离和速度
+    const threshold = cardWidth * 0.25;
+    const velocityThreshold = 0.5; // 快速滑动的速度阈值
 
-    if (cardCurrentX < -threshold && currentDayIndex < 6) {
-        // 左滑切换到下一天
-        animateToDay(currentDayIndex + 1, 'left');
-    } else if (cardCurrentX > threshold && currentDayIndex > 0) {
-        // 右滑切换到前一天
-        animateToDay(currentDayIndex - 1, 'right');
+    const shouldSwitch = Math.abs(cardCurrentX) > threshold || Math.abs(dragVelocity) > velocityThreshold;
+
+    if (cardCurrentX < -threshold || (cardCurrentX < 0 && dragVelocity < -velocityThreshold)) {
+        // 左滑
+        if (currentDayIndex < 6) {
+            // 切换到下一天
+            animateToDay(currentDayIndex + 1, 'left');
+        } else {
+            // 周日左滑，去下一周
+            resetCards();
+            setTimeout(() => {
+                nextWeek();
+            }, 300);
+        }
+    } else if (cardCurrentX > threshold || (cardCurrentX > 0 && dragVelocity > velocityThreshold)) {
+        // 右滑
+        if (currentDayIndex > 0) {
+            // 切换到前一天
+            animateToDay(currentDayIndex - 1, 'right');
+        } else {
+            // 周一右滑，去上一周
+            resetCards();
+            setTimeout(() => {
+                prevWeek();
+            }, 300);
+        }
     } else {
         // 回弹到当前位置
         resetCards();
@@ -153,12 +197,19 @@ function resetCards() {
     const cards = container.querySelectorAll('.day-card');
 
     cards.forEach((card, i) => {
-        card.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
+        card.style.transition = 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
         card.style.transform = '';
         if (i !== currentDayIndex) {
-            setTimeout(() => card.classList.add('hidden'), 300);
+            card.classList.add('hidden');
         }
     });
+
+    // 清理transition
+    setTimeout(() => {
+        cards.forEach(card => {
+            card.style.transition = '';
+        });
+    }, 250);
 }
 
 function animateToDay(targetIndex, direction) {
@@ -175,9 +226,23 @@ function animateToDay(targetIndex, direction) {
     // 更新指示器
     updateDayIndicator(targetIndex);
 
+    // 确保目标卡片可见
+    targetCard.classList.remove('hidden');
+
     // 设置过渡
-    currentCard.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
-    targetCard.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
+    const duration = '0.25s';
+    currentCard.style.transition = `transform ${duration} cubic-bezier(0.32, 0.72, 0, 1)`;
+    targetCard.style.transition = `transform ${duration} cubic-bezier(0.32, 0.72, 0, 1)`;
+
+    // 初始位置
+    if (direction === 'left') {
+        targetCard.style.transform = `translateX(${cardWidth}px)`;
+    } else {
+        targetCard.style.transform = `translateX(${-cardWidth}px)`;
+    }
+
+    // 强制重绘
+    targetCard.offsetHeight;
 
     // 执行动画
     if (direction === 'left') {
@@ -200,7 +265,7 @@ function animateToDay(targetIndex, direction) {
 
         currentDayIndex = targetIndex;
         isAnimating = false;
-    }, 300);
+    }, 250);
 }
 
 function updateDayIndicator(index) {
@@ -246,34 +311,37 @@ function switchView(view, animation = null) {
 }
 
 // ========== 周视图 ==========
-async function loadWeekView(date = null) {
+async function loadWeekView(date = null, keepDayIndex = false) {
     const targetDate = date || new Date().toISOString().split('T')[0];
     currentWeekStart = getWeekStart(targetDate);
     console.log('loadWeekView called, currentWeekStart:', currentWeekStart, 'targetDate:', targetDate);
 
-    // 如果传入了日期，计算该日期在周中的位置
-    if (date) {
-        const targetDateObj = new Date(date);
-        const weekStart = new Date(currentWeekStart);
-        // 计算目标日期是周几 (0=周一, 6=周日)
-        for (let i = 0; i < 7; i++) {
-            const checkDate = new Date(weekStart);
-            checkDate.setDate(weekStart.getDate() + i);
-            if (checkDate.toISOString().split('T')[0] === date) {
-                currentDayIndex = i;
-                break;
+    // 如果不需要保持当前日期索引，则计算
+    if (!keepDayIndex) {
+        // 如果传入了日期，计算该日期在周中的位置
+        if (date) {
+            const targetDateObj = new Date(date);
+            const weekStart = new Date(currentWeekStart);
+            // 计算目标日期是周几 (0=周一, 6=周日)
+            for (let i = 0; i < 7; i++) {
+                const checkDate = new Date(weekStart);
+                checkDate.setDate(weekStart.getDate() + i);
+                if (checkDate.toISOString().split('T')[0] === date) {
+                    currentDayIndex = i;
+                    break;
+                }
             }
-        }
-    } else {
-        // 没有传入日期，默认选中今天
-        const today = new Date().toISOString().split('T')[0];
-        const weekStart = new Date(currentWeekStart);
-        for (let i = 0; i < 7; i++) {
-            const checkDate = new Date(weekStart);
-            checkDate.setDate(weekStart.getDate() + i);
-            if (checkDate.toISOString().split('T')[0] === today) {
-                currentDayIndex = i;
-                break;
+        } else {
+            // 没有传入日期，默认选中今天
+            const today = new Date().toISOString().split('T')[0];
+            const weekStart = new Date(currentWeekStart);
+            for (let i = 0; i < 7; i++) {
+                const checkDate = new Date(weekStart);
+                checkDate.setDate(weekStart.getDate() + i);
+                if (checkDate.toISOString().split('T')[0] === today) {
+                    currentDayIndex = i;
+                    break;
+                }
             }
         }
     }
@@ -514,15 +582,15 @@ async function loadWeekIncome() {
 function prevWeek() {
     const prevDate = new Date(currentWeekStart);
     prevDate.setDate(prevDate.getDate() - 7);
-    currentDayIndex = 0;
-    loadWeekView(prevDate.toISOString().split('T')[0]);
+    currentDayIndex = 6; // 上一周显示周日
+    loadWeekView(prevDate.toISOString().split('T')[0], true);
 }
 
 function nextWeek() {
     const nextDate = new Date(currentWeekStart);
     nextDate.setDate(nextDate.getDate() + 7);
-    currentDayIndex = 0;
-    loadWeekView(nextDate.toISOString().split('T')[0]);
+    currentDayIndex = 0; // 下一周显示周一
+    loadWeekView(nextDate.toISOString().split('T')[0], true);
 }
 
 // ========== 月视图 ==========

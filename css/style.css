@@ -114,7 +114,7 @@ body {
     top: calc(var(--header-height) + env(safe-area-inset-top, 0px));
     left: 0;
     right: 0;
-    bottom: var(--nav-height);
+    bottom: calc(var(--nav-height) + 34px);
     overflow-y: auto;
     overflow-x: hidden;
     background: var(--bg-primary);
@@ -228,16 +228,19 @@ body {
     border-radius: 20px;
     padding: 20px;
     border: 0.5px solid var(--border-secondary);
-    display: block;
+    display: flex;
+    flex-direction: column;
     position: absolute;
     left: 0;
     right: 0;
     top: 0;
-    will-change: transform, opacity;
+    min-height: 450px;
+    will-change: transform;
 }
 
 .day-card.hidden {
-    display: none;
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .day-card.active {
@@ -245,6 +248,8 @@ body {
     left: auto;
     right: auto;
     top: auto;
+    visibility: visible;
+    pointer-events: auto;
     border-color: rgba(139, 92, 246, 0.4); /* 紫色 - 未来/当前 */
 }
 
@@ -325,11 +330,6 @@ body {
     gap: 16px;
     position: relative;
     min-height: 500px;
-}
-
-.day-card.active {
-    border-color: rgba(0, 178, 255, 0.3);
-    min-height: 450px;
 }
 
 .card-header-section {
@@ -502,8 +502,8 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    height: var(--nav-height);
-    padding-bottom: 20px; /* 默认底部间距 */
+    height: calc(var(--nav-height) + 34px);
+    padding-bottom: 34px;
     background: var(--nav-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
