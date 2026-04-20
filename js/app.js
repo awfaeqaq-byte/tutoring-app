@@ -192,21 +192,22 @@ function animateToNextWeek(direction) {
     const currentCard = container.querySelector('.day-card.active');
     const cardWidth = currentCard.offsetWidth;
 
-    // 当前卡片滑出
-    currentCard.style.transition = 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
-    currentCard.style.transform = `translateX(${-cardWidth}px)`;
+    // 克隆当前卡片用于滑出动画
+    const oldCardClone = currentCard.cloneNode(true);
+    oldCardClone.classList.remove('hidden');
+    oldCardClone.style.position = 'absolute';
+    oldCardClone.style.left = '0';
+    oldCardClone.style.right = '0';
+    oldCardClone.style.top = '0';
+    container.appendChild(oldCardClone);
 
-    // 先准备下一周的数据
+    // 准备下一周数据
     const nextDate = new Date(currentWeekStart);
     nextDate.setDate(nextDate.getDate() + 7);
-    const nextWeekStart = getWeekStart(nextDate.toISOString().split('T')[0]);
-
-    // 渲染新卡片（但先隐藏）
-    const savedIndex = currentDayIndex;
     currentDayIndex = 0;
-    currentWeekStart = nextWeekStart;
+    currentWeekStart = getWeekStart(nextDate.toISOString().split('T')[0]);
 
-    // 获取下一周数据并渲染
+    // 渲染新卡片
     renderWeekCards();
     renderDayIndicator();
     loadWeekIncome();
@@ -214,13 +215,17 @@ function animateToNextWeek(direction) {
     // 获取新卡片并设置初始位置
     const newCard = container.querySelector('.day-card.active');
     if (newCard) {
-        newCard.classList.remove('hidden');
         newCard.style.transition = 'none';
         newCard.style.transform = `translateX(${cardWidth}px)`;
     }
 
-    // 强制重绘后开始动画
+    // 开始动画
     requestAnimationFrame(() => {
+        // 旧卡片滑出
+        oldCardClone.style.transition = 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
+        oldCardClone.style.transform = `translateX(${-cardWidth}px)`;
+
+        // 新卡片滑入
         if (newCard) {
             newCard.style.transition = 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
             newCard.style.transform = 'translateX(0)';
@@ -228,9 +233,9 @@ function animateToNextWeek(direction) {
     });
 
     setTimeout(() => {
-        if (currentCard) {
-            currentCard.style.transition = '';
-            currentCard.style.transform = '';
+        // 删除克隆的旧卡片
+        if (oldCardClone.parentNode) {
+            oldCardClone.parentNode.removeChild(oldCardClone);
         }
         if (newCard) {
             newCard.style.transition = '';
@@ -248,19 +253,22 @@ function animateToPrevWeek(direction) {
     const currentCard = container.querySelector('.day-card.active');
     const cardWidth = currentCard.offsetWidth;
 
-    // 当前卡片滑出
-    currentCard.style.transition = 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
-    currentCard.style.transform = `translateX(${cardWidth}px)`;
+    // 克隆当前卡片用于滑出动画
+    const oldCardClone = currentCard.cloneNode(true);
+    oldCardClone.classList.remove('hidden');
+    oldCardClone.style.position = 'absolute';
+    oldCardClone.style.left = '0';
+    oldCardClone.style.right = '0';
+    oldCardClone.style.top = '0';
+    container.appendChild(oldCardClone);
 
-    // 先准备上一周的数据
+    // 准备上一周数据
     const prevDate = new Date(currentWeekStart);
     prevDate.setDate(prevDate.getDate() - 7);
-    const prevWeekStart = getWeekStart(prevDate.toISOString().split('T')[0]);
+    currentDayIndex = 6;
+    currentWeekStart = getWeekStart(prevDate.toISOString().split('T')[0]);
 
     // 渲染新卡片
-    currentDayIndex = 6;
-    currentWeekStart = prevWeekStart;
-
     renderWeekCards();
     renderDayIndicator();
     loadWeekIncome();
@@ -268,13 +276,17 @@ function animateToPrevWeek(direction) {
     // 获取新卡片并设置初始位置
     const newCard = container.querySelector('.day-card.active');
     if (newCard) {
-        newCard.classList.remove('hidden');
         newCard.style.transition = 'none';
         newCard.style.transform = `translateX(${-cardWidth}px)`;
     }
 
-    // 强制重绘后开始动画
+    // 开始动画
     requestAnimationFrame(() => {
+        // 旧卡片滑出
+        oldCardClone.style.transition = 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
+        oldCardClone.style.transform = `translateX(${cardWidth}px)`;
+
+        // 新卡片滑入
         if (newCard) {
             newCard.style.transition = 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
             newCard.style.transform = 'translateX(0)';
@@ -282,9 +294,9 @@ function animateToPrevWeek(direction) {
     });
 
     setTimeout(() => {
-        if (currentCard) {
-            currentCard.style.transition = '';
-            currentCard.style.transform = '';
+        // 删除克隆的旧卡片
+        if (oldCardClone.parentNode) {
+            oldCardClone.parentNode.removeChild(oldCardClone);
         }
         if (newCard) {
             newCard.style.transition = '';
