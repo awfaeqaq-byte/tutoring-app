@@ -535,7 +535,18 @@ function nextMonth() {
 }
 
 function showDayInWeek(dateStr) {
+    // 计算点击日期是周几
+    const clickDate = new Date(dateStr);
+    const dayOfWeek = clickDate.getDay(); // 0=周日, 1=周一, ..., 6=周六
+    const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 转换为 0=周一, 6=周日
+
+    // 设置当前日期索引
+    currentDayIndex = dayIndex;
+
+    // 切换到周视图
     switchView('week');
+
+    // 加载包含该日期的周
     loadWeekView(dateStr);
 }
 

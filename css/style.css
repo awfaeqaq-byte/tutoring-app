@@ -128,6 +128,7 @@ body {
 
 .view-content {
     padding: 16px;
+    padding-top: 24px;
     min-height: 100%;
 }
 
@@ -173,11 +174,11 @@ body {
     background: var(--neon-cyan);
 }
 
-.day-dot.completed {
+.day-dot.completed:not(.active) {
     background: var(--neon-green);
 }
 
-.day-dot.today {
+.day-dot.today:not(.active) {
     background: var(--neon-blue);
 }
 
@@ -275,48 +276,46 @@ body {
 /* 卡片滑动动画 - Apple App Store 风格 */
 .day-card.pre-left {
     transform: translateX(-100%);
-    opacity: 0;
 }
 
 .day-card.pre-right {
     transform: translateX(100%);
-    opacity: 0;
 }
 
 .day-card.slide-out-left {
-    animation: slideOutLeft 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: slideOutLeft 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
 .day-card.slide-out-right {
-    animation: slideOutRight 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: slideOutRight 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
 .day-card.slide-in-left {
-    animation: slideInLeft 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: slideInLeft 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
 .day-card.slide-in-right {
-    animation: slideInRight 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: slideInRight 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
 @keyframes slideOutLeft {
-    from { transform: translateX(0); opacity: 1; }
-    to { transform: translateX(-30%); opacity: 0; }
+    from { transform: translateX(0); }
+    to { transform: translateX(-100%); }
 }
 
 @keyframes slideOutRight {
-    from { transform: translateX(0); opacity: 1; }
-    to { transform: translateX(30%); opacity: 0; }
+    from { transform: translateX(0); }
+    to { transform: translateX(100%); }
 }
 
 @keyframes slideInLeft {
-    from { transform: translateX(30%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
 }
 
 @keyframes slideInRight {
-    from { transform: translateX(-30%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
 }
 
 /* 日卡片容器 - 支持滑动 */
