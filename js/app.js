@@ -402,26 +402,47 @@ function updateDayIndicator(index) {
 // 视图切换
 function switchView(view, animation = null) {
     const prevView = currentView;
+    const prevViewEl = document.getElementById(`${prevView}-view`);
+    const newViewEl = document.getElementById(`${view}-view`);
+
+    // 确定动画方向
+    const viewOrder = ['week', 'month', 'students', 'stats'];
+    const prevIndex = viewOrder.indexOf(prevView);
+    const newIndex = viewOrder.indexOf(view);
+    const direction = newIndex > prevIndex ? 'left' : 'right';
+
     currentView = view;
 
-    document.querySelectorAll('.app-main').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-
-    const newViewEl = document.getElementById(`${view}-view`);
-    newViewEl.classList.remove('hidden');
-
-    const viewContent = newViewEl.querySelector('.view-content');
-    if (viewContent && animation) {
-        viewContent.classList.add(animation);
-        setTimeout(() => viewContent.classList.remove(animation), 300);
+    // 添加动画类
+    if (prevViewEl) {
+        prevViewEl.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+        prevViewEl.style.transform = direction === 'left' ? 'translateX(-30%)' : 'translateX(30%)';
+        prevViewEl.style.opacity = '0';
     }
 
-    document.querySelector(`.nav-item[data-view="${view}"]`).classList.add('active');
+    setTimeout(() => {
+        document.querySelectorAll('.app-main').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
 
-    if (view === 'week') loadWeekView();
-    else if (view === 'month') loadMonthView();
-    else if (view === 'students') loadStudentsView();
-    else if (view === 'stats') loadStatsView();
+        newViewEl.classList.remove('hidden');
+        newViewEl.style.transition = 'none';
+        newViewEl.style.transform = direction === 'left' ? 'translateX(30%)' : 'translateX(-30%)';
+        newViewEl.style.opacity = '0';
+
+        // 强制重绘
+        newViewEl.offsetHeight;
+
+        newViewEl.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+        newViewEl.style.transform = 'translateX(0)';
+        newViewEl.style.opacity = '1';
+
+        document.querySelector(`.nav-item[data-view="${view}"]`).classList.add('active');
+
+        if (view === 'week') loadWeekView();
+        else if (view === 'month') loadMonthView();
+        else if (view === 'students') loadStudentsView();
+        else if (view === 'stats') loadStatsView();
+    }, 150);
 }
 
 // ========== 周视图 ==========
@@ -548,8 +569,9 @@ function renderDayCards() {
         let cardClass = 'day-card glass-card';
         if (isActive) cardClass += ' active';
         if (isHidden) cardClass += ' hidden';
+        if (isToday) cardClass += ' day-today';
         if (isPast && allCompleted) cardClass += ' day-completed';
-        if (isFuture) cardClass += ' day-future';
+        if (isFuture && !isToday) cardClass += ' day-future';
         if (isPast && !allCompleted && daySessions.length > 0) cardClass += ' day-past';
 
         html += `

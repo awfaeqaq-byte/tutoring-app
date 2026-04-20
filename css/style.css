@@ -126,7 +126,7 @@ body {
 
 .view-content {
     padding: 16px;
-    padding-top: 24px;
+    padding-top: 8px;
     min-height: 100%;
 }
 
@@ -248,7 +248,7 @@ body {
     top: auto;
     visibility: visible;
     pointer-events: auto;
-    border-color: rgba(139, 92, 246, 0.4); /* 紫色 - 未来/当前 */
+    border-color: rgba(0, 178, 255, 0.4); /* 蓝色 - 当前选中的卡片 */
 }
 
 /* 已完成的日卡片 - 绿色边框 */
@@ -269,6 +269,16 @@ body {
 .day-card.day-future.active {
     border-color: rgba(139, 92, 246, 0.5);
     box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+}
+
+/* 今天的卡片 - 蓝色边框 */
+.day-card.day-today {
+    border-color: rgba(0, 178, 255, 0.3);
+}
+
+.day-card.day-today.active {
+    border-color: rgba(0, 178, 255, 0.5);
+    box-shadow: 0 0 20px rgba(0, 178, 255, 0.15);
 }
 
 /* 过去但未完成的日卡片 - 淡色 */
@@ -393,8 +403,9 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
     min-height: 120px;
+    flex: 1;
 }
 
 .empty-sessions {
