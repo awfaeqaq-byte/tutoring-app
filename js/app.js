@@ -160,19 +160,14 @@ function handleCardSwipeEnd() {
     const threshold = cardWidth * 0.25;
     const velocityThreshold = 0.5; // 快速滑动的速度阈值
 
-    const shouldSwitch = Math.abs(cardCurrentX) > threshold || Math.abs(dragVelocity) > velocityThreshold;
-
     if (cardCurrentX < -threshold || (cardCurrentX < 0 && dragVelocity < -velocityThreshold)) {
         // 左滑
         if (currentDayIndex < 6) {
             // 切换到下一天
             animateToDay(currentDayIndex + 1, 'left');
         } else {
-            // 周日左滑，去下一周
-            resetCards();
-            setTimeout(() => {
-                nextWeek();
-            }, 300);
+            // 周日左滑，去下一周的周一
+            animateToNextWeek('left');
         }
     } else if (cardCurrentX > threshold || (cardCurrentX > 0 && dragVelocity > velocityThreshold)) {
         // 右滑
@@ -180,16 +175,95 @@ function handleCardSwipeEnd() {
             // 切换到前一天
             animateToDay(currentDayIndex - 1, 'right');
         } else {
-            // 周一右滑，去上一周
-            resetCards();
-            setTimeout(() => {
-                prevWeek();
-            }, 300);
+            // 周一右滑，去上一周的周日
+            animateToPrevWeek('right');
         }
     } else {
         // 回弹到当前位置
         resetCards();
     }
+}
+
+function animateToNextWeek(direction) {
+    if (isAnimating) return;
+    isAnimating = true;
+
+    const container = document.getElementById('day-cards-container');
+    const currentCard = container.querySelector('.day-card.active');
+    const cardWidth = currentCard.offsetWidth;
+
+    // 当前卡片滑出
+    currentCard.style.transition = 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
+    currentCard.style.transform = `translateX(${-cardWidth}px)`;
+
+    setTimeout(() => {
+        // 加载下一周
+        const nextDate = new Date(currentWeekStart);
+        nextDate.setDate(nextDate.getDate() + 7);
+        currentDayIndex = 0; // 下一周显示周一
+        currentWeekStart = getWeekStart(nextDate.toISOString().split('T')[0]);
+        renderWeekCards();
+        renderDayIndicator();
+        loadWeekIncome();
+
+        // 新卡片从右边滑入
+        const newCard = container.querySelector('.day-card.active');
+        if (newCard) {
+            newCard.style.transform = `translateX(${cardWidth}px)`;
+            newCard.offsetHeight; // 强制重绘
+            newCard.style.transition = 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
+            newCard.style.transform = 'translateX(0)';
+        }
+
+        setTimeout(() => {
+            if (newCard) {
+                newCard.style.transition = '';
+                newCard.style.transform = '';
+            }
+            isAnimating = false;
+        }, 250);
+    }, 250);
+}
+
+function animateToPrevWeek(direction) {
+    if (isAnimating) return;
+    isAnimating = true;
+
+    const container = document.getElementById('day-cards-container');
+    const currentCard = container.querySelector('.day-card.active');
+    const cardWidth = currentCard.offsetWidth;
+
+    // 当前卡片滑出
+    currentCard.style.transition = 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
+    currentCard.style.transform = `translateX(${cardWidth}px)`;
+
+    setTimeout(() => {
+        // 加载上一周
+        const prevDate = new Date(currentWeekStart);
+        prevDate.setDate(prevDate.getDate() - 7);
+        currentDayIndex = 6; // 上一周显示周日
+        currentWeekStart = getWeekStart(prevDate.toISOString().split('T')[0]);
+        renderWeekCards();
+        renderDayIndicator();
+        loadWeekIncome();
+
+        // 新卡片从左边滑入
+        const newCard = container.querySelector('.day-card.active');
+        if (newCard) {
+            newCard.style.transform = `translateX(${-cardWidth}px)`;
+            newCard.offsetHeight; // 强制重绘
+            newCard.style.transition = 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
+            newCard.style.transform = 'translateX(0)';
+        }
+
+        setTimeout(() => {
+            if (newCard) {
+                newCard.style.transition = '';
+                newCard.style.transform = '';
+            }
+            isAnimating = false;
+        }, 250);
+    }, 250);
 }
 
 function resetCards() {

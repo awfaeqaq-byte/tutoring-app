@@ -114,7 +114,7 @@ body {
     top: calc(var(--header-height) + env(safe-area-inset-top, 0px));
     left: 0;
     right: 0;
-    bottom: calc(var(--nav-height) + 34px);
+    bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
     overflow-y: auto;
     overflow-x: hidden;
     background: var(--bg-primary);
@@ -502,29 +502,16 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    height: calc(var(--nav-height) + 34px);
-    padding-bottom: 34px;
+    height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
     background: var(--nav-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid var(--nav-border);
     display: flex;
     justify-content: space-around;
-    align-items: flex-start;
-    padding-top: 10px;
+    align-items: center;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     z-index: 1000;
-}
-
-/* 支持安全区域 */
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-    .app-nav {
-        height: calc(var(--nav-height) + env(safe-area-inset-bottom));
-        padding-bottom: env(safe-area-inset-bottom);
-    }
-
-    .app-main {
-        bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
-    }
 }
 
 .nav-item {
