@@ -244,7 +244,11 @@ async function renderWeekCards() {
 
 function renderDayCards() {
     const container = document.getElementById('day-cards-container');
-    if (!container) return;
+    console.log('renderDayCards called, container:', container);
+    if (!container) {
+        console.error('day-cards-container not found!');
+        return;
+    }
 
     const weekStart = new Date(currentWeekStart);
     const now = new Date();
@@ -288,6 +292,7 @@ function renderDayCards() {
         `;
     }
 
+    console.log('Setting innerHTML, length:', html.length);
     container.innerHTML = html;
 
     // 更新标题
