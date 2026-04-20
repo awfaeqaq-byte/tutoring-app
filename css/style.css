@@ -112,7 +112,7 @@ body {
     top: var(--header-height);
     left: 0;
     right: 0;
-    bottom: var(--nav-height);
+    bottom: calc(var(--nav-height) + 8px);
     overflow-y: auto;
     overflow-x: hidden;
     background: var(--bg-primary);
@@ -497,7 +497,7 @@ body {
 /* 底部导航栏 */
 .app-nav {
     position: fixed;
-    bottom: 0;
+    bottom: 8px;
     left: 0;
     right: 0;
     height: var(--nav-height);
