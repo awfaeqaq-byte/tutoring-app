@@ -50,14 +50,12 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    height: calc(var(--header-height) + env(safe-area-inset-top, 0px));
-    padding-top: env(safe-area-inset-top, 0px);
+    height: var(--header-height);
     background: var(--bg-primary);
     z-index: 1000;
     display: flex;
     align-items: center;
-    padding-left: 16px;
-    padding-right: 16px;
+    padding: 0 16px;
 }
 
 .header-content {
@@ -111,10 +109,10 @@ body {
 /* 主内容区域 */
 .app-main {
     position: fixed;
-    top: calc(var(--header-height) + env(safe-area-inset-top, 0px));
+    top: var(--header-height);
     left: 0;
     right: 0;
-    bottom: 78px;
+    bottom: var(--nav-height);
     overflow-y: auto;
     overflow-x: hidden;
     background: var(--bg-primary);
@@ -502,6 +500,7 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
+    height: var(--nav-height);
     background: var(--nav-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -509,7 +508,6 @@ body {
     display: flex;
     justify-content: space-around;
     align-items: center;
-    height: 78px;
     z-index: 1000;
 }
 
