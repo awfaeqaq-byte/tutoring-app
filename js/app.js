@@ -175,6 +175,7 @@ function switchView(view, animation = null) {
 async function loadWeekView(date = null) {
     const targetDate = date || new Date().toISOString().split('T')[0];
     currentWeekStart = getWeekStart(targetDate);
+    console.log('loadWeekView called, currentWeekStart:', currentWeekStart);
 
     // 确定今天是周几，设置为当前选中
     const today = new Date().toISOString().split('T')[0];
@@ -187,14 +188,15 @@ async function loadWeekView(date = null) {
             break;
         }
     }
+    console.log('currentDayIndex:', currentDayIndex);
 
     const weekEnd = new Date(currentWeekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
 
-    document.getElementById('week-range').textContent =
-        `${formatDateOnly(currentWeekStart)} - ${formatDateOnly(weekEnd.toISOString().split('T')[0])}`;
-    document.getElementById('week-title').textContent =
-        `${formatDateOnly(currentWeekStart)} - ${formatDateOnly(weekEnd.toISOString().split('T')[0])}`;
+    const weekRangeEl = document.getElementById('week-range');
+    if (weekRangeEl) {
+        weekRangeEl.textContent = `${formatDateOnly(currentWeekStart)} - ${formatDateOnly(weekEnd.toISOString().split('T')[0])}`;
+    }
 
     await renderWeekCards();
     await loadWeekIncome();
@@ -351,7 +353,11 @@ function calculateDayIncome(sessions) {
 
 function renderDayIndicator() {
     const container = document.getElementById('day-indicator');
-    if (!container) return;
+    console.log('renderDayIndicator called, container:', container);
+    if (!container) {
+        console.error('day-indicator not found!');
+        return;
+    }
 
     const weekStart = new Date(currentWeekStart);
     const now = new Date();
@@ -374,6 +380,7 @@ function renderDayIndicator() {
         `;
     }
 
+    console.log('Day indicator HTML length:', html.length);
     container.innerHTML = html;
 }
 

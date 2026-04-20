@@ -37,6 +37,13 @@ body {
     display: none !important;
 }
 
+/* 毛玻璃卡片 */
+.glass-card {
+    background: var(--bg-card);
+    border-radius: 20px;
+    border: 0.5px solid var(--border-secondary);
+}
+
 /* 顶部状态栏 */
 .app-header {
     position: fixed;
@@ -217,6 +224,11 @@ body {
     border-radius: 20px;
     padding: 20px;
     border: 0.5px solid var(--border-secondary);
+    display: block;
+}
+
+.day-card.hidden {
+    display: none;
 }
 
 .day-card.active {
