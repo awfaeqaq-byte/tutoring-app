@@ -50,12 +50,14 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    height: var(--header-height);
+    height: calc(var(--header-height) + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
     background: var(--bg-primary);
     z-index: 1000;
     display: flex;
     align-items: center;
-    padding: 0 16px;
+    padding-left: 16px;
+    padding-right: 16px;
 }
 
 .header-content {
@@ -109,10 +111,10 @@ body {
 /* 主内容区域 */
 .app-main {
     position: fixed;
-    top: var(--header-height);
+    top: calc(var(--header-height) + env(safe-area-inset-top, 0px));
     left: 0;
     right: 0;
-    bottom: var(--nav-height);
+    bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
     overflow-y: auto;
     overflow-x: hidden;
     background: var(--bg-primary);
@@ -171,6 +173,14 @@ body {
     background: var(--neon-cyan);
 }
 
+.day-dot.completed {
+    background: var(--neon-green);
+}
+
+.day-dot.today {
+    background: var(--neon-blue);
+}
+
 /* 收入统计条 */
 .weekly-income-bar {
     display: flex;
@@ -211,13 +221,6 @@ body {
     color: var(--neon-green);
 }
 
-/* 日卡片容器 */
-#day-cards-container {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
 /* 日卡片 */
 .day-card {
     background: var(--bg-card);
@@ -225,10 +228,104 @@ body {
     padding: 20px;
     border: 0.5px solid var(--border-secondary);
     display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    will-change: transform, opacity;
 }
 
 .day-card.hidden {
     display: none;
+}
+
+.day-card.active {
+    position: relative;
+    left: auto;
+    right: auto;
+    top: auto;
+    border-color: rgba(139, 92, 246, 0.4); /* 紫色 - 未来/当前 */
+}
+
+/* 已完成的日卡片 - 绿色边框 */
+.day-card.day-completed {
+    border-color: rgba(0, 204, 128, 0.4);
+    box-shadow: 0 0 20px rgba(0, 204, 128, 0.1);
+}
+
+.day-card.day-completed.active {
+    border-color: rgba(0, 204, 128, 0.5);
+}
+
+/* 未来的日卡片 - 紫色边框 */
+.day-card.day-future {
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.day-card.day-future.active {
+    border-color: rgba(139, 92, 246, 0.5);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+}
+
+/* 过去但未完成的日卡片 - 淡色 */
+.day-card.day-past {
+    opacity: 0.7;
+}
+
+/* 卡片滑动动画 - Apple App Store 风格 */
+.day-card.pre-left {
+    transform: translateX(-100%);
+    opacity: 0;
+}
+
+.day-card.pre-right {
+    transform: translateX(100%);
+    opacity: 0;
+}
+
+.day-card.slide-out-left {
+    animation: slideOutLeft 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.day-card.slide-out-right {
+    animation: slideOutRight 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.day-card.slide-in-left {
+    animation: slideInLeft 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.day-card.slide-in-right {
+    animation: slideInRight 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes slideOutLeft {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(-30%); opacity: 0; }
+}
+
+@keyframes slideOutRight {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(30%); opacity: 0; }
+}
+
+@keyframes slideInLeft {
+    from { transform: translateX(30%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(-30%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* 日卡片容器 - 支持滑动 */
+#day-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: relative;
+    min-height: 400px;
 }
 
 .day-card.active {
@@ -399,7 +496,8 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    height: var(--nav-height);
+    height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     background: var(--nav-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);

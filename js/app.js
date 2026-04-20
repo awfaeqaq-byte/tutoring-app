@@ -264,13 +264,25 @@ function renderDayCards() {
         const isPast = currentDate < now && !isToday;
 
         const daySessions = weekSessions.filter(s => s.session_date === dateStr);
-        const isCompleted = isPast && daySessions.length > 0;
+        const allCompleted = daySessions.length > 0 && daySessions.every(s => s.status === 'completed');
+        const hasCompleted = daySessions.some(s => s.status === 'completed');
 
         const isActive = i === currentDayIndex;
         const isHidden = !isActive;
 
+        // 已完成：过去且有课程全部完成
+        // 未来：今天之后
+        const isFuture = currentDate > now;
+
+        let cardClass = 'day-card glass-card';
+        if (isActive) cardClass += ' active';
+        if (isHidden) cardClass += ' hidden';
+        if (isPast && allCompleted) cardClass += ' day-completed';
+        if (isFuture) cardClass += ' day-future';
+        if (isPast && !allCompleted && daySessions.length > 0) cardClass += ' day-past';
+
         html += `
-            <div class="day-card glass-card ${isActive ? 'active' : ''} ${isHidden ? 'hidden' : ''} ${isCompleted ? 'day-completed' : ''}"
+            <div class="${cardClass}"
                  data-date="${dateStr}" data-index="${i}">
                 <div class="card-header-section">
                     <div class="day-info">
@@ -278,7 +290,7 @@ function renderDayCards() {
                         <span class="day-date">${formatDateOnly(dateStr)}</span>
                     </div>
                     ${isToday ? '<div class="today-badge">今天</div>' : ''}
-                    ${isCompleted ? '<div class="completed-badge"><i class="bi bi-check-circle-fill"></i></div>' : ''}
+                    ${isPast && allCompleted ? '<div class="completed-badge"><i class="bi bi-check-circle-fill"></i></div>' : ''}
                 </div>
                 <div class="day-income-badge">
                     <span class="income-label">今日收入</span>
@@ -370,10 +382,15 @@ function renderDayIndicator() {
         const isToday = isSameDay(currentDate, now);
         const isPast = currentDate < now && !isToday;
         const daySessions = weekSessions.filter(s => s.session_date === dateStr);
-        const hasCompleted = daySessions.some(s => s.status === 'completed');
+        const allCompleted = daySessions.length > 0 && daySessions.every(s => s.status === 'completed');
+
+        let dotClass = 'day-dot';
+        if (i === currentDayIndex) dotClass += ' active';
+        if (isToday) dotClass += ' today';
+        if (isPast && allCompleted) dotClass += ' completed';
 
         html += `
-            <div class="day-dot ${i === currentDayIndex ? 'active' : ''} ${isToday ? 'today' : ''} ${isPast && hasCompleted ? 'completed' : ''}"
+            <div class="${dotClass}"
                  onclick="slideToDay(${i}, ${i > currentDayIndex ? 'left' : 'right'})"
                  data-index="${i}">
             </div>
@@ -487,10 +504,14 @@ async function loadMonthIncome() {
     const sessions = await getSessionsByDateRange(monthStart, monthEnd);
 
     const completed = sessions.filter(s => s.status === 'completed');
+    const scheduled = sessions.filter(s => s.status === 'scheduled');
+
     const totalIncome = completed.reduce((sum, s) => sum + parseFloat(s.amount || 0), 0);
+    const expectedIncome = scheduled.reduce((sum, s) => sum + parseFloat(s.amount || 0), 0);
 
     document.getElementById('month-income').textContent = `¥${totalIncome.toFixed(0)}`;
-    document.getElementById('month-sessions').textContent = `${completed.length}节`;
+    document.getElementById('month-expected-income').textContent = `¥${expectedIncome.toFixed(0)}`;
+    document.getElementById('month-sessions').textContent = `${sessions.length}节`;
 }
 
 function prevMonth() {
