@@ -389,7 +389,8 @@ async function loadWeekIncome() {
     const hourlyRate = totalHours > 0 ? (totalIncome / totalHours).toFixed(0) : 0;
 
     document.getElementById('weekly-income').textContent = `¥${totalIncome.toFixed(0)}`;
-    document.getElementById('weekly-hourly').textContent = `时薪 ¥${hourlyRate}/h`;
+    document.getElementById('weekly-hourly').textContent = `¥${hourlyRate}/h`;
+    document.getElementById('weekly-sessions').textContent = `${sessions.length}节`;
 }
 
 function prevWeek() {
