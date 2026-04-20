@@ -6,10 +6,21 @@ let currentView = 'week';
 let touchStartX = 0;
 let touchEndX = 0;
 
+// 卡片滑动相关
+let currentDayIndex = 0; // 当前选中的日期索引 (0-6)
+let weekSessions = []; // 当前周的课程数据
+let isAnimating = false;
+
 const daysOfWeek = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 const subjectColors = [
-    '#00d4ff', '#00ff88', '#bf00ff', '#ff6b35', '#ffd700',
-    '#00ffff', '#ff0080', '#7fff00', '#ff4500', '#9400d3'
+    '#4b4ced', // 紫蓝色
+    '#00b2ff', // 青色
+    '#00cc80', // 绿色
+    '#8c73d9', // 淡紫色
+    '#ff6b35', // 橙色
+    '#00d4ff', // 霓虹蓝
+    '#bf00ff', // 霓虹紫
+    '#ffd700', // 金色
 ];
 const viewOrder = ['week', 'month', 'students', 'stats'];
 
@@ -19,6 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadWeekView();
     initSubjectColorStyles();
     initGestures();
+    initCardSlider();
 });
 
 // 手势初始化
@@ -34,21 +46,103 @@ function initGestures() {
 }
 
 function handleSwipe() {
-    const swipeThreshold = 80;
+    // 只在周视图处理视图切换
+    if (currentView !== 'week') {
+        const swipeThreshold = 80;
+        const diff = touchStartX - touchEndX;
+
+        if (Math.abs(diff) < swipeThreshold) return;
+
+        const currentIndex = viewOrder.indexOf(currentView);
+
+        if (diff > 0) {
+            const nextIndex = (currentIndex + 1) % viewOrder.length;
+            switchView(viewOrder[nextIndex], 'slide-right');
+        } else {
+            const prevIndex = (currentIndex - 1 + viewOrder.length) % viewOrder.length;
+            switchView(viewOrder[prevIndex], 'slide-left');
+        }
+    }
+}
+
+// 卡片滑动初始化
+function initCardSlider() {
+    const container = document.getElementById('day-cards-container');
+    if (!container) return;
+
+    container.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    container.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleCardSwipe();
+    }, { passive: true });
+}
+
+function handleCardSwipe() {
+    if (isAnimating) return;
+
+    const swipeThreshold = 50;
     const diff = touchStartX - touchEndX;
 
     if (Math.abs(diff) < swipeThreshold) return;
 
-    const currentIndex = viewOrder.indexOf(currentView);
+    if (diff > 0 && currentDayIndex < 6) {
+        // 左滑 - 下一天
+        slideToDay(currentDayIndex + 1, 'left');
+    } else if (diff < 0 && currentDayIndex > 0) {
+        // 右滑 - 前一天
+        slideToDay(currentDayIndex - 1, 'right');
+    }
+}
 
-    if (diff > 0) {
-        // 左滑 - 下一个视图
-        const nextIndex = (currentIndex + 1) % viewOrder.length;
-        switchView(viewOrder[nextIndex], 'slide-right');
-    } else {
-        // 右滑 - 上一个视图
-        const prevIndex = (currentIndex - 1 + viewOrder.length) % viewOrder.length;
-        switchView(viewOrder[prevIndex], 'slide-left');
+function slideToDay(targetIndex, direction) {
+    if (isAnimating || targetIndex < 0 || targetIndex > 6) return;
+    isAnimating = true;
+
+    const container = document.getElementById('day-cards-container');
+    const cards = container.querySelectorAll('.day-card');
+
+    // 更新指示器
+    updateDayIndicator(targetIndex);
+
+    // 动画方向
+    const slideOutClass = direction === 'left' ? 'slide-out-left' : 'slide-out-right';
+    const slideInClass = direction === 'left' ? 'slide-in-right' : 'slide-in-left';
+
+    // 当前卡片滑出
+    cards[currentDayIndex].classList.add(slideOutClass);
+
+    // 目标卡片滑入
+    cards[targetIndex].classList.remove('hidden');
+    cards[targetIndex].classList.add('pre-' + (direction === 'left' ? 'right' : 'left'));
+    cards[targetIndex].classList.add(slideInClass);
+
+    setTimeout(() => {
+        cards[currentDayIndex].classList.add('hidden');
+        cards[currentDayIndex].classList.remove(slideOutClass, 'active');
+        cards[targetIndex].classList.remove(slideInClass, 'pre-left', 'pre-right');
+        cards[targetIndex].classList.add('active');
+        currentDayIndex = targetIndex;
+        isAnimating = false;
+    }, 350);
+}
+
+function updateDayIndicator(index) {
+    const dots = document.querySelectorAll('.day-dot');
+    dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === index);
+    });
+
+    // 更新日期标题
+    const weekStart = new Date(currentWeekStart);
+    const currentDate = new Date(weekStart);
+    currentDate.setDate(weekStart.getDate() + index);
+
+    const titleEl = document.getElementById('current-day-title');
+    if (titleEl) {
+        titleEl.textContent = `${daysOfWeek[index]} ${formatDateOnly(currentDate.toISOString().split('T')[0])}`;
     }
 }
 
@@ -63,7 +157,6 @@ function switchView(view, animation = null) {
     const newViewEl = document.getElementById(`${view}-view`);
     newViewEl.classList.remove('hidden');
 
-    // 动画只应用到内容区域
     const viewContent = newViewEl.querySelector('.view-content');
     if (viewContent && animation) {
         viewContent.classList.add(animation);
@@ -83,6 +176,18 @@ async function loadWeekView(date = null) {
     const targetDate = date || new Date().toISOString().split('T')[0];
     currentWeekStart = getWeekStart(targetDate);
 
+    // 确定今天是周几，设置为当前选中
+    const today = new Date().toISOString().split('T')[0];
+    const weekStart = new Date(currentWeekStart);
+    for (let i = 0; i < 7; i++) {
+        const checkDate = new Date(weekStart);
+        checkDate.setDate(weekStart.getDate() + i);
+        if (checkDate.toISOString().split('T')[0] === today) {
+            currentDayIndex = i;
+            break;
+        }
+    }
+
     const weekEnd = new Date(currentWeekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
 
@@ -91,7 +196,7 @@ async function loadWeekView(date = null) {
     document.getElementById('week-title').textContent =
         `${formatDateOnly(currentWeekStart)} - ${formatDateOnly(weekEnd.toISOString().split('T')[0])}`;
 
-    await renderWeekCalendar();
+    await renderWeekCards();
     await loadWeekIncome();
 }
 
@@ -104,7 +209,7 @@ function getWeekStart(dateStr) {
     return monday.toISOString().split('T')[0];
 }
 
-async function renderWeekCalendar() {
+async function renderWeekCards() {
     const weekStart = new Date(currentWeekStart);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
@@ -128,80 +233,143 @@ async function renderWeekCalendar() {
         }
     }
 
-    if (updated) {
-        const freshSessions = await getSessionsByDateRange(
-            currentWeekStart,
-            weekEnd.toISOString().split('T')[0]
-        );
-        renderWeekDays(freshSessions);
-    } else {
-        renderWeekDays(sessions);
-    }
+    weekSessions = updated ? await getSessionsByDateRange(
+        currentWeekStart,
+        weekEnd.toISOString().split('T')[0]
+    ) : sessions;
+
+    renderDayCards();
+    renderDayIndicator();
 }
 
-function renderWeekDays(sessions) {
+function renderDayCards() {
+    const container = document.getElementById('day-cards-container');
+    if (!container) return;
+
     const weekStart = new Date(currentWeekStart);
+    const now = new Date();
     let html = '';
 
     for (let i = 0; i < 7; i++) {
         const currentDate = new Date(weekStart);
         currentDate.setDate(weekStart.getDate() + i);
         const dateStr = currentDate.toISOString().split('T')[0];
-        const isToday = isSameDay(currentDate, new Date());
+        const isToday = isSameDay(currentDate, now);
+        const isPast = currentDate < now && !isToday;
 
-        const daySessions = sessions.filter(s => s.session_date === dateStr);
+        const daySessions = weekSessions.filter(s => s.session_date === dateStr);
+        const isCompleted = isPast && daySessions.length > 0;
+
+        const isActive = i === currentDayIndex;
+        const isHidden = !isActive;
 
         html += `
-            <div class="day-column" data-date="${dateStr}">
-                <div class="day-header ${isToday ? 'today' : ''}">
-                    <div class="day-name">${daysOfWeek[i]}</div>
-                    <div class="day-date">${formatDateOnly(dateStr)}</div>
+            <div class="day-card glass-card ${isActive ? 'active' : ''} ${isHidden ? 'hidden' : ''} ${isCompleted ? 'day-completed' : ''}"
+                 data-date="${dateStr}" data-index="${i}">
+                <div class="card-header-section">
+                    <div class="day-info">
+                        <span class="day-name">${daysOfWeek[i]}</span>
+                        <span class="day-date">${formatDateOnly(dateStr)}</span>
+                    </div>
+                    ${isToday ? '<div class="today-badge">今天</div>' : ''}
+                    ${isCompleted ? '<div class="completed-badge"><i class="bi bi-check-circle-fill"></i></div>' : ''}
                 </div>
-                <div class="day-sessions">
-                    ${renderDaySessions(daySessions)}
+                <div class="day-income-badge">
+                    <span class="income-label">今日收入</span>
+                    <span class="income-value">¥${calculateDayIncome(daySessions)}</span>
                 </div>
-                <button class="add-session-btn" onclick="showAddDrawer('${dateStr}')">
-                    <i class="bi bi-plus"></i>
+                <div class="sessions-list">
+                    ${renderDaySessions(daySessions, isPast)}
+                </div>
+                <button class="add-session-card-btn" onclick="showAddDrawer('${dateStr}')">
+                    <i class="bi bi-plus-lg"></i> 添加课程
                 </button>
             </div>
         `;
     }
 
-    document.getElementById('week-calendar').innerHTML = html;
+    container.innerHTML = html;
+
+    // 更新标题
+    const currentCard = container.querySelector('.day-card.active');
+    if (currentCard) {
+        const titleEl = document.getElementById('current-day-title');
+        if (titleEl) {
+            titleEl.textContent = `${daysOfWeek[currentDayIndex]} ${formatDateOnly(currentCard.dataset.date)}`;
+        }
+    }
 }
 
-function renderDaySessions(sessions) {
+function renderDaySessions(sessions, isPast) {
     if (sessions.length === 0) {
-        return '<div class="text-center text-muted py-3"><div class="small">暂无安排</div></div>';
+        return `
+            <div class="empty-sessions">
+                <i class="bi bi-calendar-x"></i>
+                <p>暂无课程安排</p>
+            </div>
+        `;
     }
 
     sessions.sort((a, b) => a.start_time.localeCompare(b.start_time));
 
     return sessions.map(session => {
         const colorIndex = getSubjectColorIndex(session.subject);
-        const subjectClass = `subject-color-${colorIndex}`;
+        const color = subjectColors[colorIndex];
+        const isCompleted = session.status === 'completed';
+
         return `
-            <div class="session-card ${subjectClass} ${session.status}"
-                 data-session-id="${session.id}">
-                <div class="session-card-content" onclick="showSessionDrawer(${session.id})">
-                    <div class="session-time">${formatTime(session.start_time)}-${formatTime(session.end_time)}
-                        ${session.is_recurring ? '<i class="bi bi-arrow-repeat ms-1"></i>' : ''}
+            <div class="session-card-item ${isCompleted ? 'session-completed' : ''}"
+                 onclick="showSessionDrawer(${session.id})" style="--accent-color: ${color}">
+                <div class="session-accent-bar"></div>
+                <div class="session-content">
+                    <div class="session-top">
+                        <span class="session-title">${session.student_name} · ${session.subject}</span>
+                        <span class="session-time">${formatTime(session.start_time)}-${formatTime(session.end_time)}</span>
                     </div>
-                    <div class="student-name">${session.student_name}</div>
-                    <div class="session-info">${session.subject}</div>
-                    <div class="amount">¥${parseFloat(session.amount).toFixed(0)}</div>
-                </div>
-                <div class="session-card-actions">
-                    <button class="action-btn edit-btn" onclick="event.stopPropagation(); editSession(${session.id})" title="编辑">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="action-btn delete-btn" onclick="event.stopPropagation(); deleteSession(${session.id})" title="删除">
-                        <i class="bi bi-trash"></i>
-                    </button>
+                    <div class="session-bottom">
+                        <span class="session-amount">¥${parseFloat(session.amount).toFixed(0)}</span>
+                        ${session.notes ? `<span class="session-notes"><i class="bi bi-sticky"></i> ${session.notes}</span>` : ''}
+                    </div>
+                    ${isCompleted ? '<div class="session-status completed"><i class="bi bi-check-circle-fill"></i> 已完成</div>' : ''}
                 </div>
             </div>
         `;
     }).join('');
+}
+
+function calculateDayIncome(sessions) {
+    return sessions
+        .filter(s => s.status === 'completed')
+        .reduce((sum, s) => sum + parseFloat(s.amount || 0), 0)
+        .toFixed(0);
+}
+
+function renderDayIndicator() {
+    const container = document.getElementById('day-indicator');
+    if (!container) return;
+
+    const weekStart = new Date(currentWeekStart);
+    const now = new Date();
+
+    let html = '';
+    for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(weekStart);
+        currentDate.setDate(weekStart.getDate() + i);
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const isToday = isSameDay(currentDate, now);
+        const isPast = currentDate < now && !isToday;
+        const daySessions = weekSessions.filter(s => s.session_date === dateStr);
+        const hasCompleted = daySessions.some(s => s.status === 'completed');
+
+        html += `
+            <div class="day-dot ${i === currentDayIndex ? 'active' : ''} ${isToday ? 'today' : ''} ${isPast && hasCompleted ? 'completed' : ''}"
+                 onclick="slideToDay(${i}, ${i > currentDayIndex ? 'left' : 'right'})"
+                 data-index="${i}">
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
 }
 
 async function loadWeekIncome() {
@@ -227,12 +395,14 @@ async function loadWeekIncome() {
 function prevWeek() {
     const prevDate = new Date(currentWeekStart);
     prevDate.setDate(prevDate.getDate() - 7);
+    currentDayIndex = 0;
     loadWeekView(prevDate.toISOString().split('T')[0]);
 }
 
 function nextWeek() {
     const nextDate = new Date(currentWeekStart);
     nextDate.setDate(nextDate.getDate() + 7);
+    currentDayIndex = 0;
     loadWeekView(nextDate.toISOString().split('T')[0]);
 }
 
@@ -274,7 +444,7 @@ async function renderMonthCalendar() {
         const dayIncome = daySessions.reduce((sum, s) => sum + parseFloat(s.amount || 0), 0);
 
         const intensity = Math.min(dayIncome / 500, 1);
-        const bgColor = dayIncome > 0 ? `rgba(0, 255, 136, ${0.2 + intensity * 0.6})` : 'transparent';
+        const bgColor = dayIncome > 0 ? `rgba(75, 76, 237, ${0.15 + intensity * 0.5})` : 'transparent';
 
         html += `
             <div class="calendar-cell ${isToday ? 'today' : ''}"
@@ -384,7 +554,6 @@ async function loadStatsView() {
 async function loadStatsIncome() {
     const today = new Date();
 
-    // 本周
     const weekStart = new Date(today);
     const day = today.getDay();
     const diff = day === 0 ? -6 : 1 - day;
@@ -401,7 +570,6 @@ async function loadStatsIncome() {
     const weekHours = weekCompleted.reduce((sum, s) => sum + (s.duration || 0), 0) / 60;
     const weekHourly = weekHours > 0 ? (weekIncome / weekHours).toFixed(0) : 0;
 
-    // 本月
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
@@ -428,7 +596,6 @@ async function loadIncomeTrendChart() {
     const sessions = await getAllSessions();
     const completed = sessions.filter(s => s.status === 'completed');
 
-    // 按周统计最近8周
     const weeks = [];
     const now = new Date();
 
@@ -460,8 +627,8 @@ async function loadIncomeTrendChart() {
             datasets: [{
                 label: '收入',
                 data: weeks.map(w => w.income),
-                borderColor: '#00ff88',
-                backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                borderColor: '#4b4ced',
+                backgroundColor: 'rgba(75, 76, 237, 0.1)',
                 borderWidth: 2,
                 fill: true,
                 tension: 0.4
@@ -472,8 +639,8 @@ async function loadIncomeTrendChart() {
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                x: { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#a0a0a0' } },
-                y: { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#a0a0a0' } }
+                x: { grid: { color: 'rgba(255, 255, 255, 0.06)' }, ticks: { color: 'rgba(160, 160, 160, 0.8)' } },
+                y: { grid: { color: 'rgba(255, 255, 255, 0.06)' }, ticks: { color: 'rgba(160, 160, 160, 0.8)' } }
             }
         }
     });
@@ -550,7 +717,6 @@ async function showAddDrawer(date = null) {
     const dateInput = form.querySelector('[name="session_date"]');
     dateInput.value = date || new Date().toISOString().split('T')[0];
 
-    // 加载学生列表到下拉框
     await loadStudentSelect();
 
     document.getElementById('add-overlay').classList.add('show');
@@ -600,7 +766,6 @@ async function showSessionDrawer(sessionId) {
         ? `<button class="btn-neon btn-outline" onclick="markScheduled(${session.id})">标记未完成</button>`
         : `<button class="btn-neon" onclick="markCompleted(${session.id})">标记完成</button>`;
 
-    // 批量删除按钮（如果是循环课程）
     const deleteButtons = session.is_recurring && session.series_id
         ? `<button class="btn-neon btn-danger" onclick="deleteSession(${session.id})">删除本次</button>
            <button class="btn-neon btn-danger" onclick="deleteFutureSessions(${session.id}, '${session.series_id}', '${session.session_date}')">删除本次及之后</button>`
@@ -736,7 +901,6 @@ async function deleteStudent(studentId) {
     }
 }
 
-// 快速从学生添加课程
 async function quickAddSession(studentId) {
     const student = await getStudent(studentId);
     if (!student) return;
@@ -794,7 +958,6 @@ async function saveSession() {
             const recurrenceEndDate = formData.get('recurrence_end_date');
 
             if (isRecurring && recurrenceEndDate) {
-                // 生成系列ID
                 const seriesId = 'series_' + Date.now();
                 let currentDate = new Date(sessionData.session_date);
                 const endDate = new Date(recurrenceEndDate);
@@ -861,7 +1024,6 @@ async function deleteSession(sessionId) {
     }
 }
 
-// 批量删除循环课程（全部）
 async function deleteSeries(sessionId, seriesId) {
     if (!confirm('确定要删除这个循环课程的所有课程吗？此操作不可恢复。')) return;
 
@@ -876,23 +1038,15 @@ async function deleteSeries(sessionId, seriesId) {
     }
 }
 
-// 删除当前课程及之后的循环课程
 async function deleteFutureSessions(sessionId, seriesId, currentDate) {
     if (!confirm('确定要删除本次及之后的所有循环课程吗？\n\n之前的课程将保留。')) return;
 
     try {
         const allSessions = await getAllSessions();
-        console.log('所有课程:', allSessions.length);
-        console.log('当前series_id:', seriesId);
-        console.log('当前日期:', currentDate);
 
         const futureSessions = allSessions.filter(s => {
-            const match = s.series_id === seriesId && s.session_date >= currentDate;
-            console.log(`课程 ${s.id}: series_id=${s.series_id}, date=${s.session_date}, match=${match}`);
-            return match;
+            return s.series_id === seriesId && s.session_date >= currentDate;
         });
-
-        console.log('要删除的课程:', futureSessions.length);
 
         const database = getDB();
         const transaction = database.transaction(['sessions'], 'readwrite');

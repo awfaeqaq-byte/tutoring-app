@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>家教安排助手</title>
+    <title>家教助手</title>
     <meta name="description" content="个人家教安排管理工具">
-    <meta name="theme-color" content="#0a1628">
+    <meta name="theme-color" content="#03050d">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
     <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
@@ -13,6 +13,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="家教助手">
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="css/style.css">
@@ -22,35 +26,51 @@
     <header class="app-header">
         <div class="header-content">
             <div class="header-left">
-                <i class="bi bi-calendar-check neon-text"></i>
                 <span class="app-title">家教助手</span>
             </div>
             <div class="header-center">
-                <span id="week-range" class="neon-text"></span>
+                <span id="week-range"></span>
+            </div>
+            <div class="header-right">
+                <button class="week-nav-btn" onclick="prevWeek()">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button class="week-nav-btn next" onclick="nextWeek()">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
             </div>
         </div>
     </header>
 
     <!-- 主内容区域 - 周视图 -->
     <main class="app-main" id="week-view">
-        <div class="view-header">
-            <div class="week-nav">
-                <button class="week-nav-btn" onclick="prevWeek()">
-                    <i class="bi bi-chevron-left"></i>
-                </button>
-                <span id="week-title" class="neon-text"></span>
-                <button class="week-nav-btn" onclick="nextWeek()">
-                    <i class="bi bi-chevron-right"></i>
-                </button>
+        <!-- 日期指示器 -->
+        <div class="day-dots-container">
+            <div class="day-dots" id="day-indicator">
+                <!-- 动态生成 -->
             </div>
         </div>
+
         <div class="view-content">
             <div class="weekly-income-bar">
-                <span class="income-label">本周收入</span>
-                <span class="income-value" id="weekly-income">¥0</span>
-                <span class="income-hourly" id="weekly-hourly">时薪 ¥0/h</span>
+                <div>
+                    <span class="income-label">本周收入</span>
+                    <span class="income-value" id="weekly-income">¥0</span>
+                </div>
+                <div class="divider"></div>
+                <div>
+                    <span class="income-label">平均时薪</span>
+                    <span class="income-hourly" id="weekly-hourly">¥0/h</span>
+                </div>
+                <div class="divider"></div>
+                <div>
+                    <span class="income-label">本周课程</span>
+                    <span class="sessions-count" id="weekly-sessions">0节</span>
+                </div>
             </div>
-            <div class="week-calendar" id="week-calendar"></div>
+            <div class="week-calendar" id="day-cards-container">
+                <!-- 动态生成日卡片 -->
+            </div>
         </div>
     </main>
 
@@ -61,43 +81,44 @@
                 <button class="week-nav-btn" onclick="prevMonth()">
                     <i class="bi bi-chevron-left"></i>
                 </button>
-                <span id="month-title" class="neon-text"></span>
-                <button class="week-nav-btn" onclick="nextMonth()">
+                <span id="month-title"></span>
+                <button class="week-nav-btn next" onclick="nextMonth()">
                     <i class="bi bi-chevron-right"></i>
                 </button>
             </div>
         </div>
         <div class="view-content">
-            <div class="income-card">
-                <div class="row">
-                    <div class="col-6">
-                        <div class="label">本月收入</div>
-                        <div class="value" id="month-income">¥0</div>
-                    </div>
-                    <div class="col-6">
-                        <div class="label">课程数</div>
-                        <div class="value" id="month-sessions" style="color: var(--neon-cyan);">0节</div>
-                    </div>
+            <div class="weekly-income-bar">
+                <div>
+                    <span class="income-label">本月收入</span>
+                    <span class="income-value" id="month-income">¥0</span>
+                </div>
+                <div class="divider"></div>
+                <div>
+                    <span class="income-label">课程数</span>
+                    <span class="sessions-count" id="month-sessions">0节</span>
                 </div>
             </div>
-            <div class="calendar-heatmap">
-                <div class="calendar-weekdays">
-                    <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+            <div class="chart-card">
+                <div class="calendar-heatmap">
+                    <div class="calendar-weekdays">
+                        <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+                    </div>
+                    <div class="calendar-grid" id="calendar-grid"></div>
                 </div>
-                <div class="calendar-grid" id="calendar-grid"></div>
             </div>
         </div>
     </main>
 
     <!-- 学生档案视图 -->
     <main class="app-main hidden" id="students-view">
-        <div class="students-header">
-            <h5 class="neon-text">学生档案</h5>
-            <button class="btn-neon btn-sm" onclick="showAddStudentDrawer()">
-                <i class="bi bi-plus"></i> 添加学生
-            </button>
-        </div>
         <div class="view-content">
+            <div class="students-header">
+                <h5>学生档案</h5>
+                <button class="btn-neon btn-sm" onclick="showAddStudentDrawer()">
+                    <i class="bi bi-plus"></i> 添加学生
+                </button>
+            </div>
             <div class="students-list" id="students-list"></div>
         </div>
     </main>
@@ -119,14 +140,14 @@
             </div>
 
             <div class="chart-card">
-                <h6 class="chart-title neon-text">收入趋势</h6>
+                <h6 class="chart-title">收入趋势</h6>
                 <div class="chart-container">
                     <canvas id="income-trend-chart"></canvas>
                 </div>
             </div>
 
             <div class="chart-card">
-                <h6 class="chart-title neon-text">科目分布</h6>
+                <h6 class="chart-title">科目分布</h6>
                 <div class="chart-container">
                     <canvas id="subject-pie-chart"></canvas>
                 </div>
